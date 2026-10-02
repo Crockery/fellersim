@@ -1,3 +1,5 @@
 target/
 release/
 result.json
+node_modules/
+dist/

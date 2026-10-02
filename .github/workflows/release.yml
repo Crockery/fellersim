@@ -38,9 +38,27 @@ jobs:
           name: ${{ matrix.platform }}
           path: release/*
           if-no-files-found: error
+  smoke-download:
+    needs: build
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: linux-x86_64
+          - os: windows-2025
+            platform: windows-x86_64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v5
+        with:
+          name: ${{ matrix.platform }}
+          path: release
+      - run: python scripts/smoke-release.py
   publish:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
+    needs: smoke-download
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
