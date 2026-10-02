@@ -1,0 +1,249 @@
+{
+  "abilities": [
+    {
+      "abilityId": "test:engulfing-flames",
+      "abilityName": "Engulfing Flames",
+      "meanCasts": 23.0,
+      "meanCrits": 4.35,
+      "meanDamage": 34868.0,
+      "meanDps": 116.22666666666667,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 1127.0,
+      "meanTargetsHit": 3.0,
+      "share": 0.669008233858939
+    },
+    {
+      "abilityId": "test:incinerate",
+      "abilityName": "Incinerate",
+      "meanCasts": 5.0,
+      "meanCrits": 21.04,
+      "meanDamage": 4894.52,
+      "meanDps": 16.315066666666667,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 105.0,
+      "meanTargetsHit": 3.0,
+      "share": 0.09391058221828766
+    },
+    {
+      "abilityId": "test:fire-frogs",
+      "abilityName": "Fire Frogs",
+      "meanCasts": 2.0,
+      "meanCrits": 5.61,
+      "meanDamage": 4333.57,
+      "meanDps": 14.445233333333332,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 104.93,
+      "meanTargetsHit": 3.0,
+      "share": 0.08314770024102563
+    },
+    {
+      "abilityId": "test:infernal-wave",
+      "abilityName": "Infernal Wave",
+      "meanCasts": 23.0,
+      "meanCrits": 4.54,
+      "meanDamage": 2726.46,
+      "meanDps": 9.0882,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 23.0,
+      "meanTargetsHit": 1.0,
+      "share": 0.052312268822044365
+    },
+    {
+      "abilityId": "test:fire-ball",
+      "abilityName": "Fire Ball",
+      "meanCasts": 3.0,
+      "meanCrits": 1.79,
+      "meanDamage": 1832.88,
+      "meanDps": 6.1096,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 72.0,
+      "meanTargetsHit": 3.0,
+      "share": 0.03516725397715304
+    },
+    {
+      "abilityId": "test:searing-blaze",
+      "abilityName": "Searing Blaze",
+      "meanCasts": 23.0,
+      "meanCrits": 4.53,
+      "meanDamage": 1690.0,
+      "meanDps": 5.633333333333334,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 93.0,
+      "meanTargetsHit": 3.0,
+      "share": 0.03242583214470595
+    },
+    {
+      "abilityId": "test:detonate",
+      "abilityName": "Detonate",
+      "meanCasts": 2.09,
+      "meanCrits": 1.38,
+      "meanDamage": 807.27,
+      "meanDps": 2.6909,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 6.27,
+      "meanTargetsHit": 1.0,
+      "share": 0.015488994979560218
+    },
+    {
+      "abilityId": "test:apocalypse",
+      "abilityName": "Apocalypse",
+      "meanCasts": 1.0,
+      "meanCrits": 0.56,
+      "meanDamage": 548.24,
+      "meanDps": 1.8274666666666668,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 3.0,
+      "meanTargetsHit": 3.0,
+      "share": 0.010519016695274313
+    },
+    {
+      "abilityId": "firemage-talent-id-talent17",
+      "abilityName": "Flare Up",
+      "meanCasts": 0.0,
+      "meanCrits": 0.0,
+      "meanDamage": 418.0,
+      "meanDps": 1.3933333333333333,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 10.0,
+      "meanTargetsHit": 1.0,
+      "share": 0.00802011706301011
+    },
+    {
+      "abilityId": "test:pyromania",
+      "abilityName": "Pyromania",
+      "meanCasts": 23.0,
+      "meanCrits": 4.97,
+      "meanDamage": 0.0,
+      "meanDps": 0.0,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 23.0,
+      "meanTargetsHit": 1.0,
+      "share": 0.0
+    },
+    {
+      "abilityId": "test:wildfire",
+      "abilityName": "Wildfire",
+      "meanCasts": 1.0,
+      "meanCrits": 0.0,
+      "meanDamage": 0.0,
+      "meanDps": 0.0,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 0.0,
+      "meanTargetsHit": 0.0,
+      "share": 0.0
+    }
+  ],
+  "confidenceInterval95": {
+    "high": 174.00779853589592,
+    "low": 173.451801464104
+  },
+  "dataBuildId": "test-build",
+  "evidence": {
+    "buildId": "test-build",
+    "claims": [
+      {
+        "id": "test:claim",
+        "sourceId": "test:source",
+        "sourceName": "Test source",
+        "status": "verified"
+      }
+    ],
+    "evidenceFingerprint": "test-evidence-fingerprint",
+    "modelRevision": "test-evidence-r1",
+    "schemaVersion": 1,
+    "scope": "ardeos-stacked-dummies"
+  },
+  "iterations": 100,
+  "meanDps": 173.72979999999995,
+  "modelVersion": "ardeos-stationary-dummies-v45",
+  "primaryTargetDps": 88.27863333333333,
+  "procs": [
+    {
+      "id": "proc:ability:test:fire-ball",
+      "meanCount": 1.99,
+      "meanPerMinute": 0.398,
+      "name": "Fire Ball",
+      "sourceId": "test:fire-ball"
+    },
+    {
+      "id": "proc:ability:test:apocalypse",
+      "meanCount": 0.39,
+      "meanPerMinute": 0.078,
+      "name": "Apocalypse",
+      "sourceId": "test:apocalypse"
+    },
+    {
+      "id": "proc:system:spirit-refund",
+      "meanCount": 0.08,
+      "meanPerMinute": 0.016,
+      "name": "Spirit refund",
+      "sourceId": "spirit-refund"
+    }
+  ],
+  "profileFingerprint": "test-profile",
+  "runId": "fixture-ardeos",
+  "scenario": {
+    "schemaVersion": 3,
+    "targetCount": 3,
+    "targetDistanceUnits": 3000.0
+  },
+  "scenarioId": "ardeos-stationary-dummies-300s-v3",
+  "schemaVersion": 18,
+  "seed": "0123456789abcdef",
+  "standardDeviation": 1.4183598770201942,
+  "targets": [
+    {
+      "meanDamage": 26483.59,
+      "meanDps": 88.27863333333333,
+      "primary": true,
+      "share": 0.5081375407865165,
+      "targetIndex": 0
+    },
+    {
+      "meanDamage": 12914.26,
+      "meanDps": 43.047533333333334,
+      "primary": false,
+      "share": 0.2477843946941362,
+      "targetIndex": 1
+    },
+    {
+      "meanDamage": 12721.09,
+      "meanDps": 42.40363333333333,
+      "primary": false,
+      "share": 0.24407806451934752,
+      "targetIndex": 2
+    }
+  ],
+  "uptimes": [
+    {
+      "id": "dot:engulfing-flames",
+      "meanUptime": 0.129511111111111,
+      "name": "Engulfing Flames"
+    },
+    {
+      "id": "dot:fire-frogs",
+      "meanUptime": 0.08021417777777774,
+      "name": "Fire Frogs"
+    },
+    {
+      "id": "dot:fire-ball",
+      "meanUptime": 0.06956666666666676,
+      "name": "Fire Ball"
+    },
+    {
+      "id": "dot:searing-blaze",
+      "meanUptime": 0.06571111111111104,
+      "name": "Searing Blaze"
+    },
+    {
+      "id": "buff:spirit-of-heroism",
+      "meanUptime": 0.06160000000000009,
+      "name": "Spirit of Heroism"
+    },
+    {
+      "id": "buff:wildfire",
+      "meanUptime": 0.03333333333333331,
+      "name": "Wildfire"
+    }
+  ]
+}

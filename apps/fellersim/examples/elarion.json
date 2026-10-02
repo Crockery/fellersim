@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 6,
+  "heroId": "bowguy",
+  "talentPoints": 14,
+  "selectedTalentIds": [],
+  "positions": [
+    {
+      "positionId": "head",
+      "item": null
+    },
+    {
+      "positionId": "necklace",
+      "item": null
+    },
+    {
+      "positionId": "shoulders",
+      "item": null
+    },
+    {
+      "positionId": "back",
+      "item": null
+    },
+    {
+      "positionId": "chest",
+      "item": null
+    },
+    {
+      "positionId": "wrists",
+      "item": null
+    },
+    {
+      "positionId": "hands",
+      "item": null
+    },
+    {
+      "positionId": "waist",
+      "item": null
+    },
+    {
+      "positionId": "feet",
+      "item": null
+    },
+    {
+      "positionId": "ring-1",
+      "item": null
+    },
+    {
+      "positionId": "ring-2",
+      "item": null
+    },
+    {
+      "positionId": "trinket-1",
+      "item": null
+    },
+    {
+      "positionId": "trinket-2",
+      "item": null
+    },
+    {
+      "positionId": "weapon",
+      "item": null
+    }
+  ],
+  "disabledConditionalContributionIds": []
+}

@@ -1,0 +1,175 @@
+use serde_json::Value;
+use std::{path::PathBuf, process::Command};
+
+fn example(name: &str) -> String {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("examples")
+        .join(name)
+        .to_string_lossy()
+        .into_owned()
+}
+fn run(arguments: &[&str]) -> std::process::Output {
+    Command::new(env!("CARGO_BIN_EXE_fellersim"))
+        .args(arguments)
+        .output()
+        .unwrap()
+}
+#[test]
+fn runs_all_heroes_offline_with_clean_json_output() {
+    for name in ["ardeos", "rime", "tariq", "elarion", "mara", "gunde"] {
+        let output = run(&[
+            "run",
+            "--character",
+            &example(&format!("{name}.json")),
+            "--apl",
+            &example(&format!("{name}.apl")),
+            "--iterations",
+            "100",
+            "--json",
+        ]);
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let result: Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(result["iterations"], 100);
+        assert!(result["meanDps"].as_f64().unwrap() > 0.0);
+        assert_eq!(result["simulatorVersion"], env!("CARGO_PKG_VERSION"));
+        assert_eq!(result["dataBuildId"], fellersim_data::build_id());
+    }
+}
+#[test]
+fn flags_override_config_and_invalid_inputs_exit_unsuccessfully() {
+    let temp = tempfile::tempdir().unwrap();
+    let config = temp.path().join("config.json");
+    std::fs::write(
+        &config,
+        r#"{"iterations":100001,"targets":3,"seed":"0000000000000001"}"#,
+    )
+    .unwrap();
+    let character = example("ardeos.json");
+    let apl = example("ardeos.apl");
+    let output = run(&[
+        "run",
+        "--character",
+        &character,
+        "--apl",
+        &apl,
+        "--config",
+        config.to_str().unwrap(),
+        "--iterations",
+        "100",
+        "--targets",
+        "1",
+        "--json",
+    ]);
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let result: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(result["iterations"], 100);
+    assert_eq!(result["scenario"]["targetCount"], 1);
+    assert_eq!(result["seed"], "0000000000000001");
+    let output = run(&[
+        "validate",
+        "--character",
+        &character,
+        "--apl",
+        &apl,
+        "--config",
+        config.to_str().unwrap(),
+    ]);
+    assert!(!output.status.success());
+    assert!(output.stdout.is_empty());
+    let output = run(&["run", "--character", "missing.json", "--apl", &apl]);
+    assert!(!output.status.success());
+}
+#[test]
+fn explicit_seed_matches_library_and_default_seed_ignores_comments() {
+    use fellersim_core::{preparation::*, simulate_owned};
+    use std::sync::{Arc, atomic::AtomicBool};
+    let character = example("ardeos.json");
+    let apl = example("ardeos.apl");
+    let input = SimulationInput {
+        schema_version: 1,
+        run_id: "cli".into(),
+        data_build_id: fellersim_data::build_id().into(),
+        character: serde_json::from_str(&std::fs::read_to_string(&character).unwrap()).unwrap(),
+        apl_source: std::fs::read_to_string(&apl).unwrap(),
+        options: SimulationOptions {
+            iterations: 100,
+            targets: 1,
+            seed: Some("0000000000000001".into()),
+        },
+    };
+    let expected = simulate_owned(
+        prepare(&input).unwrap(),
+        Arc::new(AtomicBool::new(false)),
+        |_| {},
+    )
+    .unwrap();
+    let output = run(&[
+        "run",
+        "--character",
+        &character,
+        "--apl",
+        &apl,
+        "--iterations",
+        "100",
+        "--seed",
+        "0000000000000001",
+        "--json",
+    ]);
+    assert!(output.status.success());
+    let mut actual: Value = serde_json::from_slice(&output.stdout).unwrap();
+    actual.as_object_mut().unwrap().remove("simulatorVersion");
+    assert_eq!(actual, serde_json::to_value(expected).unwrap());
+    let mut a = input.clone();
+    a.options.seed = None;
+    let mut b = a.clone();
+    b.run_id = "different".into();
+    b.apl_source = format!("# new comment\n{}\n# trailing", b.apl_source);
+    assert_eq!(prepare(&a).unwrap().seed, prepare(&b).unwrap().seed);
+}
+#[cfg(unix)]
+#[test]
+fn ctrl_c_cancels_without_a_success_result() {
+    use std::{
+        io::{BufRead, BufReader},
+        process::Stdio,
+    };
+    let mut child = Command::new(env!("CARGO_BIN_EXE_fellersim"))
+        .args([
+            "run",
+            "--character",
+            &example("ardeos.json"),
+            "--apl",
+            &example("ardeos.apl"),
+            "--iterations",
+            "100000",
+            "--targets",
+            "20",
+            "--json",
+        ])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut stderr = BufReader::new(child.stderr.take().unwrap());
+    let mut line = String::new();
+    stderr.read_line(&mut line).unwrap();
+    assert!(line.contains("Iterations"));
+    assert!(
+        Command::new("kill")
+            .args(["-INT", &child.id().to_string()])
+            .status()
+            .unwrap()
+            .success()
+    );
+    let output = child.wait_with_output().unwrap();
+    assert!(!output.status.success());
+    assert!(output.stdout.is_empty());
+}

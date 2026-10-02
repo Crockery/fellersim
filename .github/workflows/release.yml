@@ -1,0 +1,57 @@
+name: Fellersim
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: linux-x86_64
+          - os: windows-2025
+            platform: windows-x86_64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - run: rustup update stable
+      - run: cargo fmt --all --check
+      - run: cargo test --locked --workspace
+      - run: cargo build --locked --release -p fellersim
+      - name: Offline binary smoke test
+        shell: bash
+        run: |
+          target/release/fellersim --version
+          target/release/fellersim run --character apps/fellersim/examples/ardeos.json --apl apps/fellersim/examples/ardeos.apl --iterations 100 --json > result.json
+          python -c "import json; r=json.load(open('result.json')); assert r['meanDps'] > 0 and r['iterations'] == 100"
+      - run: python scripts/package-release.py ${{ matrix.platform }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}
+          path: release/*
+          if-no-files-found: error
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v5
+        with:
+          path: release
+          merge-multiple: true
+      - name: Publish public executable archives
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" release/* --verify-tag --title "Fellersim $GITHUB_REF_NAME" --generate-notes

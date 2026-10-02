@@ -1,0 +1,7 @@
+Fellersim is an unofficial community project for Fellowship.
+
+Game identifiers, names, descriptions, and gameplay values originate from
+Fellowship. Runtime definitions are derived from the matching game build,
+@crockery/fellowship-data, and Fellership's maintained simulation models.
+The source-code license does not claim ownership of the game's trademarks
+or underlying game content. No game binaries, SDK dumps, or artwork are included.

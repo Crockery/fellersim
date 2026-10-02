@@ -1,0 +1,295 @@
+{
+  "abilities": [
+    {
+      "abilityId": "test:bursting-ice",
+      "abilityName": "Bursting Ice",
+      "meanCasts": 24.0,
+      "meanCrits": 77.24,
+      "meanDamage": 28517.44,
+      "meanDps": 95.05813333333333,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 432.0,
+      "meanTargetsHit": 3.0,
+      "share": 0.31664192633283855
+    },
+    {
+      "abilityId": "GA_Rime_Helper_AutoDamageProjectile",
+      "abilityName": "Anima Spikes",
+      "meanCasts": 0.0,
+      "meanCrits": 27.85,
+      "meanDamage": 21393.35,
+      "meanDps": 71.31116666666667,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 159.0,
+      "meanTargetsHit": 3.0,
+      "share": 0.237539959923213
+    },
+    {
+      "abilityId": "talent:coalescing-frost",
+      "abilityName": "Coalescing Frost",
+      "meanCasts": 0.0,
+      "meanCrits": 0.48,
+      "meanDamage": 16258.95,
+      "meanDps": 54.1965,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 3.0,
+      "meanTargetsHit": 3.0,
+      "share": 0.1805304139554359
+    },
+    {
+      "abilityId": "test:freezing-torrent",
+      "abilityName": "Freezing Torrent",
+      "meanCasts": 10.0,
+      "meanCrits": 13.15,
+      "meanDamage": 9238.49,
+      "meanDps": 30.794966666666667,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 70.96,
+      "meanTargetsHit": 1.0,
+      "share": 0.10257909791365094
+    },
+    {
+      "abilityId": "GA_Rime_TargetedPeriodicProjectileAoe",
+      "abilityName": "Frost Swallows",
+      "meanCasts": 0.0,
+      "meanCrits": 19.72,
+      "meanDamage": 7632.48,
+      "meanDps": 25.441599999999998,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 110.0,
+      "meanTargetsHit": 1.0,
+      "share": 0.08474684859148869
+    },
+    {
+      "abilityId": "test:frost-bolt",
+      "abilityName": "Frost Bolt",
+      "meanCasts": 24.0,
+      "meanCrits": 4.57,
+      "meanDamage": 3199.84,
+      "meanDps": 10.666133333333335,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 24.0,
+      "meanTargetsHit": 1.0,
+      "share": 0.03552925864161966
+    },
+    {
+      "abilityId": "test:cold-snap",
+      "abilityName": "Cold Snap",
+      "meanCasts": 23.0,
+      "meanCrits": 4.03,
+      "meanDamage": 3027.36,
+      "meanDps": 10.0912,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 23.0,
+      "meanTargetsHit": 1.0,
+      "share": 0.03361413584469652
+    },
+    {
+      "abilityId": "talent:talon-strike",
+      "abilityName": "Talon Strike",
+      "meanCasts": 0.0,
+      "meanCrits": 0.92,
+      "meanDamage": 794.2,
+      "meanDps": 2.6473333333333335,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 5.0,
+      "meanTargetsHit": 1.0,
+      "share": 0.008818358797056832
+    },
+    {
+      "abilityId": "test:anima-spike",
+      "abilityName": "Anima Spike",
+      "meanCasts": 0.0,
+      "meanCrits": 0.0,
+      "meanDamage": 0.0,
+      "meanDps": 0.0,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 0.0,
+      "meanTargetsHit": 0.0,
+      "share": 0.0
+    },
+    {
+      "abilityId": "test:flight-of-the-navir",
+      "abilityName": "Flight Of The Navir",
+      "meanCasts": 23.0,
+      "meanCrits": 0.0,
+      "meanDamage": 0.0,
+      "meanDps": 0.0,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 0.0,
+      "meanTargetsHit": 0.0,
+      "share": 0.0
+    },
+    {
+      "abilityId": "test:glacial-blast",
+      "abilityName": "Glacial Blast",
+      "meanCasts": 1.0,
+      "meanCrits": 0.0,
+      "meanDamage": 0.0,
+      "meanDps": 0.0,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 0.0,
+      "meanTargetsHit": 0.0,
+      "share": 0.0
+    },
+    {
+      "abilityId": "test:ice-blitz",
+      "abilityName": "Ice Blitz",
+      "meanCasts": 23.0,
+      "meanCrits": 0.0,
+      "meanDamage": 0.0,
+      "meanDps": 0.0,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 0.0,
+      "meanTargetsHit": 0.0,
+      "share": 0.0
+    },
+    {
+      "abilityId": "test:ice-comet",
+      "abilityName": "Ice Comet",
+      "meanCasts": 0.0,
+      "meanCrits": 0.0,
+      "meanDamage": 0.0,
+      "meanDps": 0.0,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 0.0,
+      "meanTargetsHit": 0.0,
+      "share": 0.0
+    },
+    {
+      "abilityId": "test:winters-blessing",
+      "abilityName": "Winters Blessing",
+      "meanCasts": 23.0,
+      "meanCrits": 0.0,
+      "meanDamage": 0.0,
+      "meanDps": 0.0,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 0.0,
+      "meanTargetsHit": 0.0,
+      "share": 0.0
+    },
+    {
+      "abilityId": "test:wrath-of-winter",
+      "abilityName": "Wrath Of Winter",
+      "meanCasts": 1.0,
+      "meanCrits": 0.0,
+      "meanDamage": 0.0,
+      "meanDps": 0.0,
+      "meanGrievousCrits": 0.0,
+      "meanHits": 0.0,
+      "meanTargetsHit": 0.0,
+      "share": 0.0
+    }
+  ],
+  "confidenceInterval95": {
+    "high": 302.54143528456893,
+    "low": 297.87263138209767
+  },
+  "dataBuildId": "test-build",
+  "evidence": {
+    "buildId": "test-build",
+    "claims": [
+      {
+        "id": "test:claim",
+        "sourceId": "test:source",
+        "sourceName": "Test source",
+        "status": "verified"
+      }
+    ],
+    "evidenceFingerprint": "test-evidence-fingerprint",
+    "modelRevision": "test-evidence-r1",
+    "schemaVersion": 1,
+    "scope": "rime-stacked-dummies"
+  },
+  "iterations": 100,
+  "meanDps": 300.2070333333333,
+  "modelVersion": "rime-stationary-dummies-v31",
+  "primaryTargetDps": 153.43853333333334,
+  "procs": [
+    {
+      "id": "proc:talent:rime-talent-id-talent9",
+      "meanCount": 5.97,
+      "meanPerMinute": 1.194,
+      "name": "Rime talent 9",
+      "sourceId": "rime-talent-id-talent9"
+    },
+    {
+      "id": "proc:talent:rime-talent-id-talent3",
+      "meanCount": 3.42,
+      "meanPerMinute": 0.6839999999999999,
+      "name": "Rime talent 3",
+      "sourceId": "rime-talent-id-talent3"
+    }
+  ],
+  "profileFingerprint": "test-profile",
+  "runId": "fixture-rime",
+  "scenario": {
+    "schemaVersion": 3,
+    "targetCount": 3,
+    "targetDistanceUnits": 3000.0
+  },
+  "scenarioId": "rime-stationary-dummies-300s-v3",
+  "schemaVersion": 18,
+  "seed": "fedcba9876543210",
+  "standardDeviation": 11.910214036916498,
+  "targets": [
+    {
+      "meanDamage": 46031.56,
+      "meanDps": 153.43853333333334,
+      "primary": true,
+      "share": 0.5111090557394226,
+      "targetIndex": 0
+    },
+    {
+      "meanDamage": 21914.63,
+      "meanDps": 73.04876666666667,
+      "primary": false,
+      "share": 0.2433279655562145,
+      "targetIndex": 1
+    },
+    {
+      "meanDamage": 22115.92,
+      "meanDps": 73.71973333333332,
+      "primary": false,
+      "share": 0.24556297870436303,
+      "targetIndex": 2
+    }
+  ],
+  "uptimes": [
+    {
+      "id": "buff:glacial-assault",
+      "meanUptime": 0.5981299999999992,
+      "name": "Glacial Assault"
+    },
+    {
+      "id": "buff:soulfrost-torrent",
+      "meanUptime": 0.15437756666666672,
+      "name": "Soulfrost Torrent"
+    },
+    {
+      "id": "buff:flight-of-the-navir",
+      "meanUptime": 0.12995333333333306,
+      "name": "Flight Of The Navir"
+    },
+    {
+      "id": "buff:ice-blitz",
+      "meanUptime": 0.12995333333333306,
+      "name": "Ice Blitz"
+    },
+    {
+      "id": "buff:winters-blessing",
+      "meanUptime": 0.12995333333333306,
+      "name": "Winters Blessing"
+    },
+    {
+      "id": "buff:wrath-of-winter",
+      "meanUptime": 0.06666666666666662,
+      "name": "Wrath Of Winter"
+    },
+    {
+      "id": "buff:spirit-of-heroism",
+      "meanUptime": 0.016666666666666656,
+      "name": "Spirit of Heroism"
+    }
+  ]
+}

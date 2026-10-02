@@ -1,0 +1,18 @@
+[workspace]
+members = ["crates/fellersim", "crates/fellersim-data", "apps/fellersim"]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[workspace.dependencies]
+clap = { version = "4.5.40", features = ["derive", "env"] }
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = { version = "1.0.140", features = ["float_roundtrip"] }
+sha2 = "0.10.9"
+tempfile = "3.20.0"
+thiserror = "2.0.12"
+tokio = { version = "1.45.1", features = ["macros", "rt-multi-thread", "signal", "sync", "time"] }
+ts-rs = "12.0.1"

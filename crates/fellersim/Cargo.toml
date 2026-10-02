@@ -1,0 +1,21 @@
+[package]
+name = "fellersim-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+strict-work-budget = []
+
+[dependencies]
+serde.workspace = true
+thiserror.workspace = true
+ts-rs.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+fellersim-data = { path = "../fellersim-data" }
+
+[dev-dependencies]
+serde_json.workspace = true
+flate2 = "1"
