@@ -1,5 +1,7 @@
 target/
 release/
 result.json
+__pycache__/
+aur-package/
 node_modules/
 dist/

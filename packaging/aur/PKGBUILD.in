@@ -1,0 +1,27 @@
+# Maintainer: Crockery (https://github.com/Crockery/fellersim/issues)
+pkgname=fellersim-bin
+pkgver=@VERSION@
+pkgrel=@PKGREL@
+pkgdesc='Offline Fellowship character simulator'
+arch=('x86_64')
+url='https://github.com/Crockery/fellersim'
+license=('MIT')
+depends=('glibc' 'libgcc')
+provides=("fellersim=$pkgver")
+conflicts=('fellersim')
+options=('!strip' '!debug')
+source=("https://github.com/Crockery/fellersim/releases/download/v$pkgver/fellersim-$pkgver-linux-$CARCH.tar.gz")
+sha256sums=('@SHA256@')
+
+package() {
+  install -Dm755 fellersim "$pkgdir/usr/bin/fellersim"
+  install -Dm644 catalog.json "$pkgdir/usr/share/fellersim/catalog.json"
+  install -dm755 "$pkgdir/usr/share/fellersim/default-apls" "$pkgdir/usr/share/fellersim/examples"
+  install -m644 default-apls/*.apl "$pkgdir/usr/share/fellersim/default-apls/"
+  install -m644 examples/*.json "$pkgdir/usr/share/fellersim/examples/"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/fellersim/README.md"
+  install -Dm644 agent-guide.md "$pkgdir/usr/share/doc/fellersim/agent-guide.md"
+  install -Dm644 packaging/aur/README.md "$pkgdir/usr/share/doc/fellersim/packaging/aur/README.md"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/fellersim-bin/LICENSE"
+  install -Dm644 NOTICE "$pkgdir/usr/share/licenses/fellersim-bin/NOTICE"
+}
