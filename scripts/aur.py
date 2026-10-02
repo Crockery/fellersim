@@ -58,7 +58,7 @@ def generate(archive, version, revision, template, output):
     for key, value in {"VERSION": version, "PKGREL": str(revision), "SHA256": digest}.items():
         recipe = recipe.replace(f"@{key}@", value)
     output.mkdir(parents=True, exist_ok=True)
-    (output / "PKGBUILD").write_text(recipe)
+    (output / "PKGBUILD").write_text(recipe, newline="\n")
     # Checked against makepkg --printsrcinfo in the clean Arch build.
     metadata = [
         "pkgbase = fellersim-bin", "\tpkgdesc = Offline Fellowship character simulator",
@@ -69,7 +69,7 @@ def generate(archive, version, revision, template, output):
         f"\tsource = {REPOSITORY}/releases/download/v{version}/{archive_name(version)}",
         f"\tsha256sums = {digest}", "", "pkgname = fellersim-bin", "",
     ]
-    (output / ".SRCINFO").write_text("\n".join(metadata))
+    (output / ".SRCINFO").write_text("\n".join(metadata), newline="\n")
 
 
 def download(tag, output):
