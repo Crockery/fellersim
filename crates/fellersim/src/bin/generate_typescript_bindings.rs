@@ -5,13 +5,13 @@ use fellersim_core::{
     AbilityDamageResult, ActionPriorityListV2, AplBooleanReference, AplBuff, AplComparisonOperator,
     AplExpression, AplExpressionNode, AplNumericOperand, AplNumericReference, AplResource,
     AplResourceMeasure, AplRule, AplTargetEffectKind, AplTargetEffectModel,
-    AplTargetEffectProperty, AplTargetEffectSource, ChannelModel, ConfidenceInterval, DotModel,
-    DpsAbilityKind, DpsAbilityModel, DpsEvidenceClaimSnapshot, DpsEvidenceClaimStatus,
-    DpsEvidenceScope, DpsEvidenceSnapshotV1, DpsGcdHasteMode, DpsTalentModel,
-    DynamicMechanicHandler, DynamicMechanicInstance, MechanicClassification, NormalizedDpsProfile,
-    ProcResult, ScenarioNoOpAbility, SimulationError, SimulationErrorCode, SimulationProgress,
-    SimulationRequest, SimulationResult, StationaryDummyScenarioV3, TargetDamageResult,
-    UptimeResult,
+    AplTargetEffectProperty, AplTargetEffectSource, ChannelModel, ConfidenceInterval, Diagnostic,
+    DiagnosticSeverity, DotModel, DpsAbilityKind, DpsAbilityModel, DpsEvidenceClaimSnapshot,
+    DpsEvidenceClaimStatus, DpsEvidenceScope, DpsEvidenceSnapshotV1, DpsGcdHasteMode,
+    DpsTalentModel, DynamicMechanicHandler, DynamicMechanicInstance, MechanicClassification,
+    NormalizedDpsProfile, ProcResult, ScenarioNoOpAbility, SimulationError, SimulationErrorCode,
+    SimulationProgress, SimulationRequest, SimulationResult, StationaryDummyScenarioV3,
+    TargetDamageResult, UptimeResult,
 };
 use ts_rs::TS;
 
@@ -78,6 +78,8 @@ fn main() {
     push_decl::<ProcResult>(&config, &mut declarations);
     push_decl::<TargetDamageResult>(&config, &mut declarations);
     push_decl::<UptimeResult>(&config, &mut declarations);
+    push_decl::<DiagnosticSeverity>(&config, &mut declarations);
+    push_decl::<Diagnostic>(&config, &mut declarations);
     push_decl::<SimulationErrorCode>(&config, &mut declarations);
     push_decl::<SimulationError>(&config, &mut declarations);
 

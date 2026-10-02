@@ -201,6 +201,8 @@ pub(crate) struct AbilityTotals {
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct IterationResult {
+    pub(crate) trace: Vec<crate::TraceDecision>,
+    pub(crate) trace_truncated: bool,
     pub(crate) damage: f64,
     pub(crate) targets: Vec<f64>,
     pub(crate) abilities: Vec<AbilityTotals>,
@@ -684,7 +686,6 @@ impl ActorRegistrationOrder {
 
 #[derive(Debug)]
 pub(crate) struct CommonState<'a> {
-    #[cfg(test)]
     pub(crate) action_priority_list: &'a ActionPriorityListV2,
     pub(crate) runtime_action_priority_list: Vec<RuntimeAplRule>,
     pub(crate) apl_fight_threshold_times: Vec<u64>,
@@ -996,7 +997,6 @@ impl<'a> Iteration<'a> {
             test_heretic_before_generic: false,
             profile,
             common: CommonState {
-                #[cfg(test)]
                 action_priority_list,
                 runtime_action_priority_list,
                 apl_fight_threshold_times,
@@ -1205,7 +1205,13 @@ impl<'a> Iteration<'a> {
         mechanic_index * self.common.target_count as usize + target_index as usize
     }
 
-    pub(crate) fn run(mut self) -> Result<IterationResult, SimulationError> {
+    pub(crate) fn run(self) -> Result<IterationResult, SimulationError> {
+        self.run_observed(None)
+    }
+    pub(crate) fn run_observed(
+        mut self,
+        capture: Option<crate::TraceOptions>,
+    ) -> Result<IterationResult, SimulationError> {
         while self.common.now_ms < ENCOUNTER_DURATION_MS {
             if !self.common.execution.check_cancelled() {
                 break;
@@ -1214,7 +1220,27 @@ impl<'a> Iteration<'a> {
             if self.common.execution.failed() {
                 break;
             }
-            let action = self.choose_action();
+            let action = if let Some(capture) = &capture {
+                if self.common.now_ms <= capture.until_ms
+                    && self.common.result.trace.len() < capture.max_decisions
+                {
+                    let state = self.trace_state();
+                    let mut rules = Vec::new();
+                    let action = self.choose_action_observed(Some(&mut rules));
+                    self.common.result.trace.push(crate::TraceDecision {
+                        time_ms: self.common.now_ms,
+                        rules,
+                        state,
+                        selected_ability: action.map(|i| self.profile.abilities[i].id.clone()),
+                    });
+                    action
+                } else {
+                    self.common.result.trace_truncated = true;
+                    self.choose_action()
+                }
+            } else {
+                self.choose_action()
+            };
             if self.common.execution.failed() {
                 break;
             }

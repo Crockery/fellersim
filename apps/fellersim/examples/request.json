@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "character": {
+    "kind": "file",
+    "path": "ardeos.json"
+  },
+  "apl": {
+    "kind": "default"
+  },
+  "options": {
+    "iterations": 1000,
+    "targets": 1,
+    "seed": "0123456789abcdef"
+  }
+}

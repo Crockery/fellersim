@@ -3,11 +3,14 @@ use crate::{ActionPriorityListV2, SimulationError, SimulationErrorCode};
 use serde_json::{Value, json};
 
 fn error(line: usize, column: usize, message: impl std::fmt::Display) -> SimulationError {
-    SimulationError {
-        code: SimulationErrorCode::InvalidActionPriorityList,
-        message: format!("APL line {line}, column {column}: {message}"),
-        sources: vec![],
-    }
+    let mut diagnostic = crate::Diagnostic::error("invalid-action-priority-list", format!("APL line {line}, column {column}: {message}"))
+        .help("Use fellersim catalog apl-references and catalog abilities --hero ID to inspect valid tokens.");
+    diagnostic.line = Some(line as u32);
+    diagnostic.column = Some(column as u32);
+    SimulationError::from_diagnostics(
+        SimulationErrorCode::InvalidActionPriorityList,
+        vec![diagnostic],
+    )
 }
 
 struct Parser {
@@ -162,7 +165,7 @@ impl Parser {
     }
 }
 
-fn reference(token: &str, boolean: bool) -> Option<Value> {
+pub(crate) fn reference(token: &str, boolean: bool) -> Option<Value> {
     let parts: Vec<_> = token.split('.').collect();
     let fields = if parts.len() == 3 {
         let id = parts[1].replace('_', "-");
@@ -217,11 +220,28 @@ fn reference(token: &str, boolean: bool) -> Option<Value> {
 }
 
 pub fn parse_apl(source: &str) -> Result<ActionPriorityListV2, SimulationError> {
+    Ok(parse_apl_document(source)?.apl)
+}
+#[derive(Debug, Clone, serde::Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AplSourceLocation {
+    pub rule_id: String,
+    pub line: u32,
+    pub column: u32,
+}
+#[derive(Debug, Clone, serde::Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AplDocument {
+    pub apl: ActionPriorityListV2,
+    pub source_map: Vec<AplSourceLocation>,
+}
+pub fn parse_apl_document(source: &str) -> Result<AplDocument, SimulationError> {
     if source.len() > 1024 * 1024 {
         return Err(error(1, 1, "APL exceeds 1 MiB"));
     }
     let normalized = source.replace("\r\n", "\n").replace('\r', "\n");
     let mut rules = Vec::new();
+    let mut source_map = Vec::new();
     let mut comments = Vec::new();
     for (index, raw) in normalized.lines().enumerate() {
         let line = index + 1;
@@ -288,12 +308,20 @@ pub fn parse_apl(source: &str) -> Result<ActionPriorityListV2, SimulationError> 
         } else {
             Value::Null
         };
+        source_map.push(AplSourceLocation {
+            rule_id: format!("rule-{}", rules.len()),
+            line: line as u32,
+            column: (raw.len() - raw.trim_start().len() + 1) as u32,
+        });
         rules.push(json!({"id":format!("rule-{}", rules.len()),"enabled":enabled,"abilityId":ability.replace('_',"-"),
             "leadingComments":std::mem::take(&mut comments),"inlineComment":inline,"condition":condition}));
         if rules.len() > 128 {
             return Err(error(line, 1, "An APL supports at most 128 rules"));
         }
     }
-    serde_json::from_value(json!({"schemaVersion":2,"rules":rules,"trailingComments":comments}))
-        .map_err(|e| error(1, 1, e))
+    let apl = serde_json::from_value(
+        json!({"schemaVersion":2,"rules":rules,"trailingComments":comments}),
+    )
+    .map_err(|e| error(1, 1, e))?;
+    Ok(AplDocument { apl, source_map })
 }

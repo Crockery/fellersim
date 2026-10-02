@@ -18,47 +18,140 @@ pub(super) fn ranks(item: &CharacterItem) -> BTreeMap<String, u32> {
 }
 
 pub(super) fn validate(build: &CharacterBuild) -> Result<(), SimulationError> {
+    let issues = diagnose(build);
+    if issues.is_empty() {
+        Ok(())
+    } else {
+        Err(SimulationError::from_diagnostics(
+            SimulationErrorCode::InvalidBuild,
+            issues,
+        ))
+    }
+}
+
+pub(super) fn diagnose(build: &CharacterBuild) -> Vec<Diagnostic> {
     let data = fellersim_data::catalog();
     let hero = &data["heroes"][&build.hero_id];
-    if build.schema_version != 6 || hero.is_null() {
-        return Err(invalid(
-            "Expected character schemaVersion 6 and a supported hero.",
-        ));
+    let mut issues = Vec::new();
+    macro_rules! issue {
+        ($code:expr, $path:expr, $message:expr) => {
+            if issues.len() <= MAX_DIAGNOSTICS {
+                let path = ($path).to_string();
+                let kind = match $code {
+                    "unsupported-hero" => "heroes",
+                    "unknown-or-duplicate-talent" | "talent-budget" | "talent-budget-exceeded" => {
+                        "talents"
+                    }
+                    "invalid-gem" | "duplicate-gem" => "gems",
+                    "invalid-trait" | "trait-rank-limit" => "traits",
+                    "invalid-blessing" => "blessings",
+                    _ => "equipment",
+                };
+                let help = if kind == "heroes" {
+                    "Inspect valid heroes with fellersim catalog heroes.".into()
+                } else {
+                    format!(
+                        "Inspect valid choices with fellersim catalog {kind} --hero {}.",
+                        build.hero_id
+                    )
+                };
+                let mut diagnostic = Diagnostic::error($code, $message).at(&path).help(help);
+                if let Some(value) = serde_json::to_value(build).unwrap().pointer(&path) {
+                    if let Some(id) = value.as_str() {
+                        diagnostic.identifiers.push(id.into());
+                    } else {
+                        for key in [
+                            "itemId",
+                            "positionId",
+                            "choiceId",
+                            "gemId",
+                            "traitId",
+                            "blessingId",
+                        ] {
+                            if let Some(id) = value[key].as_str() {
+                                diagnostic.identifiers.push(id.into());
+                            }
+                        }
+                    }
+                }
+                issues.push(diagnostic);
+            }
+        };
     }
-    if build.talent_points > 14
-        || build.selected_talent_ids.len() > 32
+    if build.schema_version != 6 {
+        issue!(
+            "unsupported-character-schema",
+            "/schemaVersion",
+            "Expected character schemaVersion 6."
+        );
+    }
+    if hero.is_null() {
+        issue!(
+            "unsupported-hero",
+            "/heroId",
+            "Expected a supported hero. Use fellersim catalog heroes."
+        );
+        return issues;
+    }
+    if build.talent_points > 14 {
+        issue!(
+            "talent-budget",
+            "/talentPoints",
+            "Talent budget must be at most 14."
+        );
+    }
+    if build.selected_talent_ids.len() > 32
         || build.positions.len() != arr(&data["positions"]).len()
         || build.disabled_conditional_contribution_ids.len() > 256
     {
-        return Err(invalid(
-            "Invalid character size, positions, or talent budget.",
-        ));
+        issue!(
+            "character-size",
+            "",
+            "Invalid character size, positions, or talent budget."
+        );
+        return issues;
     }
     let mut selected = BTreeSet::new();
     let mut points = 0.0;
-    for id in &build.selected_talent_ids {
+    for (i, id) in build.selected_talent_ids.iter().enumerate() {
         let talent = &hero["talents"][id];
         if talent.is_null() || !selected.insert(id) {
-            return Err(invalid(format!("Unknown or duplicate talent: {id}")));
+            issue!(
+                "unknown-or-duplicate-talent",
+                format!("/selectedTalentIds/{i}"),
+                format!("Unknown or duplicate talent: {id}")
+            );
+        } else {
+            points += num(talent, "pointCost");
         }
-        points += num(talent, "pointCost");
     }
     if points > build.talent_points as f64 {
-        return Err(invalid("Selected talents exceed the talent point budget."));
+        issue!(
+            "talent-budget-exceeded",
+            "/selectedTalentIds",
+            "Selected talents exceed the talent point budget."
+        );
     }
     let mut positions = BTreeSet::new();
     let mut counts = BTreeMap::new();
     let mut trait_ranks = BTreeMap::new();
-    for position in &build.positions {
+    for (pi, position) in build.positions.iter().enumerate() {
+        let path = format!("/positions/{pi}");
         let slot = arr(&data["positions"])
             .iter()
             .find(|p| string(p, "id") == position.position_id);
         if slot.is_none() || !positions.insert(&position.position_id) {
-            return Err(invalid("Unknown or duplicate equipment position."));
+            issue!(
+                "invalid-position",
+                format!("{path}/positionId"),
+                "Unknown or duplicate equipment position."
+            );
+            continue;
         }
         let Some(item) = &position.item else {
             continue;
         };
+        let path = format!("{path}/item");
         let definition = &hero["items"][&item.item_id];
         let config =
             &data["configurations"][definition["configs"][&item.rarity].as_str().unwrap_or("")];
@@ -66,16 +159,25 @@ pub(super) fn validate(build: &CharacterBuild) -> Result<(), SimulationError> {
             || string(definition, "itemType") != string(slot.unwrap(), "itemType")
             || config.is_null()
         {
-            return Err(invalid(format!(
-                "{} is not valid for {} at rarity {}",
-                item.item_id, position.position_id, item.rarity
-            )));
+            issue!(
+                "invalid-item",
+                &path,
+                format!(
+                    "{} is not valid for {} at rarity {}",
+                    item.item_id, position.position_id, item.rarity
+                )
+            );
+            continue;
         }
         if !arr(&definition["validItemLevelsByRarity"][&item.rarity])
             .iter()
             .any(|n| n.as_u64() == Some(item.item_level as u64))
         {
-            return Err(invalid("Invalid item level."));
+            issue!(
+                "invalid-item-level",
+                format!("{path}/itemLevel"),
+                "Invalid item level."
+            );
         }
         let max_tempers = arr(&data["itemStatModel"]["curves"]["itemRarityAndLevelToMaxTempers"])
             .iter()
@@ -88,14 +190,19 @@ pub(super) fn validate(build: &CharacterBuild) -> Result<(), SimulationError> {
             })
             .unwrap_or(0.0);
         if item.applied_tempers as f64 > max_tempers {
-            return Err(invalid("Applied tempers exceed the item's limit."));
+            issue!(
+                "temper-limit",
+                format!("{path}/appliedTempers"),
+                "Applied tempers exceed the item's limit."
+            );
         }
         *counts.entry(item.item_id.clone()).or_insert(0u32) += 1;
         if item.rolled_modifiers.len() > 64 || item.gems.len() > 4 || item.blessings.len() > 64 {
-            return Err(invalid("Too many item selections."));
+            issue!("item-size", &path, "Too many item selections.");
+            continue;
         }
         let mut selections = BTreeSet::new();
-        for modifier in &item.rolled_modifiers {
+        for (i, modifier) in item.rolled_modifiers.iter().enumerate() {
             let slot = arr(&config["slots"])
                 .iter()
                 .find(|s| string(s, "id") == modifier.slot_id);
@@ -105,14 +212,15 @@ pub(super) fn validate(build: &CharacterBuild) -> Result<(), SimulationError> {
                         || !has(&s["allowedChoiceIds"], &modifier.choice_id)
                 })
             {
-                return Err(invalid(format!(
-                    "Invalid or duplicate modifier slot: {}",
-                    modifier.slot_id
-                )));
+                issue!(
+                    "invalid-modifier",
+                    format!("{path}/rolledModifiers/{i}"),
+                    format!("Invalid or duplicate modifier slot: {}", modifier.slot_id)
+                );
             }
         }
         let mut blessings = BTreeMap::new();
-        for blessing in &item.blessings {
+        for (i, blessing) in item.blessings.iter().enumerate() {
             let slot = arr(&config["slots"])
                 .iter()
                 .find(|s| string(s, "id") == blessing.slot_id);
@@ -121,13 +229,21 @@ pub(super) fn validate(build: &CharacterBuild) -> Result<(), SimulationError> {
                 || !has(&config["blessingIds"], &blessing.blessing_id)
                 || blessing.rank == 0
             {
-                return Err(invalid("Invalid blessing selection."));
+                issue!(
+                    "invalid-blessing",
+                    format!("{path}/blessings/{i}"),
+                    "Invalid blessing selection."
+                );
             }
             *blessings.entry(&blessing.blessing_id).or_insert(0u64) += u64::from(blessing.rank);
         }
         for (id, rank) in blessings {
             if rank as f64 > num(&data["blessings"][id], "maxRank") {
-                return Err(invalid("Blessing rank cap exceeded."));
+                issue!(
+                    "blessing-rank-limit",
+                    format!("{path}/blessings"),
+                    "Blessing rank cap exceeded."
+                );
             }
         }
         for group in arr(&config["rollGroups"]) {
@@ -137,11 +253,15 @@ pub(super) fn validate(build: &CharacterBuild) -> Result<(), SimulationError> {
                 .count()
                 > 1
             {
-                return Err(invalid("A random roll group permits one selection."));
+                issue!(
+                    "roll-group-conflict",
+                    &path,
+                    "A random roll group permits one selection."
+                );
             }
         }
         let mut sockets = BTreeSet::new();
-        for gem in &item.gems {
+        for (i, gem) in item.gems.iter().enumerate() {
             let index = gem
                 .socket_id
                 .strip_prefix("socket:")
@@ -164,7 +284,11 @@ pub(super) fn validate(build: &CharacterBuild) -> Result<(), SimulationError> {
                 || tier.is_none()
                 || definition.is_none_or(|g| num(g, "tier") > tier.unwrap_or(0) as f64)
             {
-                return Err(invalid("Unknown gem or incompatible socket tier."));
+                issue!(
+                    "invalid-gem",
+                    format!("{path}/gems/{i}"),
+                    "Unknown gem or incompatible socket tier."
+                );
             }
         }
         if let Some(tree) = &item.trait_tree {
@@ -173,13 +297,16 @@ pub(super) fn validate(build: &CharacterBuild) -> Result<(), SimulationError> {
                 || tree.rolls.len() > 128
                 || tree.selected_node_ids.len() > 32
             {
-                return Err(invalid(
-                    "This item has no active trait tree or its selections are too large.",
-                ));
+                issue!(
+                    "invalid-trait-tree",
+                    format!("{path}/traitTree"),
+                    "This item has no active trait tree or its selections are too large."
+                );
+                continue;
             }
             let nodes = arr(&config["traitTree"]["nodes"]);
             let mut rolls = BTreeSet::new();
-            for roll in &tree.rolls {
+            for (i, roll) in tree.rolls.iter().enumerate() {
                 if !rolls.insert(&roll.node_id)
                     || nodes
                         .iter()
@@ -189,16 +316,25 @@ pub(super) fn validate(build: &CharacterBuild) -> Result<(), SimulationError> {
                                 || !has(&n["eligibleTraitIds"], &roll.trait_id)
                         })
                 {
-                    return Err(invalid("Unknown, duplicate, or ineligible trait roll."));
+                    issue!(
+                        "invalid-trait-roll",
+                        format!("{path}/traitTree/rolls/{i}"),
+                        "Unknown, duplicate, or ineligible trait roll."
+                    );
                 }
             }
             let mut chosen = Vec::new();
-            for id in &tree.selected_node_ids {
+            for (i, id) in tree.selected_node_ids.iter().enumerate() {
                 let node = nodes.iter().find(|n| string(n, "id") == id);
-                if node.is_none() || !rolls.contains(id) {
-                    return Err(invalid("Selected trait node has no valid roll."));
+                if let Some(node) = node.filter(|_| rolls.contains(id)) {
+                    chosen.push(node);
+                } else {
+                    issue!(
+                        "invalid-trait-node",
+                        format!("{path}/traitTree/selectedNodeIds/{i}"),
+                        "Selected trait node has no valid roll."
+                    );
                 }
-                chosen.push(node.unwrap());
             }
             chosen.sort_by(|a, b| num(a, "row").total_cmp(&num(b, "row")));
             let mut rows = BTreeSet::new();
@@ -213,9 +349,11 @@ pub(super) fn validate(build: &CharacterBuild) -> Result<(), SimulationError> {
                         .iter()
                         .any(|p| p.as_str().is_some_and(|id| active.contains(id)))
                 {
-                    return Err(invalid(
-                        "Trait selections must form one connected path with one node per row.",
-                    ));
+                    issue!(
+                        "disconnected-trait-path",
+                        format!("{path}/traitTree/selectedNodeIds"),
+                        "Trait selections must form one connected path with one node per row."
+                    );
                 }
                 active.insert(string(node, "id").to_owned());
             }
@@ -226,13 +364,21 @@ pub(super) fn validate(build: &CharacterBuild) -> Result<(), SimulationError> {
     }
     for (id, count) in counts {
         if count as f64 > num(&hero["items"][&id], "maxEquipped") {
-            return Err(invalid(format!("Too many copies of {id}")));
+            issue!(
+                "item-count-limit",
+                "/positions",
+                format!("Too many copies of {id}")
+            );
         }
     }
     for (id, rank) in trait_ranks {
         if rank as f64 > num(&data["traits"][&id], "maxRank") {
-            return Err(invalid(format!("Trait rank cap exceeded: {id}")));
+            issue!(
+                "trait-rank-limit",
+                "/positions",
+                format!("Trait rank cap exceeded: {id}")
+            );
         }
     }
-    Ok(())
+    issues
 }

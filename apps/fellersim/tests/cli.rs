@@ -42,7 +42,7 @@ fn runs_all_heroes_offline_with_clean_json_output() {
             String::from_utf8_lossy(&validated.stderr)
         );
         let validation: Value = serde_json::from_slice(&validated.stdout).unwrap();
-        assert_eq!(validation["valid"], true);
+        assert_eq!(validation["data"]["valid"], true);
         let output = run(&[
             "run",
             "--character",
@@ -59,10 +59,10 @@ fn runs_all_heroes_offline_with_clean_json_output() {
             String::from_utf8_lossy(&output.stderr)
         );
         let result: Value = serde_json::from_slice(&output.stdout).unwrap();
-        assert_eq!(result["iterations"], 100);
-        assert!(result["meanDps"].as_f64().unwrap() > 0.0);
-        assert_eq!(result["simulatorVersion"], env!("CARGO_PKG_VERSION"));
-        assert_eq!(result["dataBuildId"], fellersim_data::build_id());
+        assert_eq!(result["data"]["iterations"], 100);
+        assert!(result["data"]["meanDps"].as_f64().unwrap() > 0.0);
+        assert_eq!(result["versions"]["simulator"], env!("CARGO_PKG_VERSION"));
+        assert_eq!(result["data"]["dataBuildId"], fellersim_data::build_id());
     }
 }
 #[test]
@@ -80,7 +80,7 @@ fn rejects_invalid_character_files_with_file_context() {
         (
             "wrong-format",
             changed("/format", "another-planner".into()),
-            "Expected a Fellership Character Planner export",
+            "unknown variant",
         ),
         ("wrong-version", changed("/version", 7.into()), "version 6"),
         (
@@ -129,8 +129,10 @@ fn rejects_invalid_character_files_with_file_context() {
                 "--json",
             ]);
             assert!(!output.status.success(), "{command}: {name}");
-            assert!(output.stdout.is_empty(), "{command}: {name}");
-            let error = String::from_utf8_lossy(&output.stderr);
+            assert_eq!(output.status.code(), Some(2));
+            let response: Value = serde_json::from_slice(&output.stdout).unwrap();
+            assert_eq!(response["ok"], false);
+            let error = response["diagnostics"].to_string();
             assert!(error.contains(path.to_str().unwrap()), "{error}");
             assert!(error.contains(expected), "{command}: {name}: {error}");
         }
@@ -164,8 +166,9 @@ fn validates_nested_build_schema_and_selections() {
                 "--json",
             ]);
             assert!(!output.status.success(), "{command}: {field}");
-            assert!(output.stdout.is_empty(), "{command}: {field}");
-            let error = String::from_utf8_lossy(&output.stderr);
+            assert_eq!(output.status.code(), Some(2));
+            let response: Value = serde_json::from_slice(&output.stdout).unwrap();
+            let error = response["diagnostics"].to_string();
             assert!(error.contains(expected), "{command}: {field}: {error}");
         }
     }
@@ -201,9 +204,9 @@ fn flags_override_config_and_invalid_inputs_exit_unsuccessfully() {
         String::from_utf8_lossy(&output.stderr)
     );
     let result: Value = serde_json::from_slice(&output.stdout).unwrap();
-    assert_eq!(result["iterations"], 100);
-    assert_eq!(result["scenario"]["targetCount"], 1);
-    assert_eq!(result["seed"], "0000000000000001");
+    assert_eq!(result["data"]["iterations"], 100);
+    assert_eq!(result["data"]["scenario"]["targetCount"], 1);
+    assert_eq!(result["data"]["seed"], "0000000000000001");
     let output = run(&[
         "validate",
         "--character",
@@ -254,10 +257,20 @@ fn explicit_seed_matches_library_and_default_seed_ignores_comments() {
         "--seed",
         "0000000000000001",
         "--json",
+        "--detail",
+        "full",
     ]);
     assert!(output.status.success());
     let mut actual: Value = serde_json::from_slice(&output.stdout).unwrap();
-    actual.as_object_mut().unwrap().remove("simulatorVersion");
+    actual = actual["data"].take();
+    actual
+        .as_object_mut()
+        .unwrap()
+        .remove("modelingLimitations");
+    actual
+        .as_object_mut()
+        .unwrap()
+        .remove("evidenceFingerprint");
     assert_eq!(actual, serde_json::to_value(expected).unwrap());
     let mut a = input.clone();
     a.options.seed = None;
@@ -302,6 +315,7 @@ fn ctrl_c_cancels_without_a_success_result() {
             .success()
     );
     let output = child.wait_with_output().unwrap();
-    assert!(!output.status.success());
-    assert!(output.stdout.is_empty());
+    assert_eq!(output.status.code(), Some(130));
+    let response: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(response["diagnostics"][0]["code"], "cancelled");
 }
