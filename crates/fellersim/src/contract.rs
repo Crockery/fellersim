@@ -40,7 +40,7 @@ pub const ENCOUNTER_DURATION_MS: u64 = 300_000;
 pub const MIN_STATIONARY_DUMMY_TARGETS: u32 = 1;
 pub const MAX_STATIONARY_DUMMY_TARGETS: u32 = 20;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct SimulationRequest {
     pub schema_version: u32,
@@ -59,7 +59,7 @@ pub struct SimulationRequest {
     pub action_priority_list: ActionPriorityListV2,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 /// Targets form one co-located stationary group directly in front of the
 /// player at the hero's maximum authored combat range. Melee heroes use their
@@ -74,7 +74,7 @@ pub struct StationaryDummyScenarioV3 {
     pub target_distance_units: f64,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum DpsEvidenceScope {
     ArdeosSingleDummy,
@@ -91,7 +91,7 @@ pub enum DpsEvidenceScope {
     GundeStackedDummies,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum DpsEvidenceClaimStatus {
     Verified,
@@ -100,7 +100,7 @@ pub enum DpsEvidenceClaimStatus {
     NoImpact,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct DpsEvidenceClaimSnapshot {
     pub id: String,
@@ -109,7 +109,7 @@ pub struct DpsEvidenceClaimSnapshot {
     pub status: DpsEvidenceClaimStatus,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct DpsEvidenceSnapshotV1 {
     pub schema_version: u32,
@@ -120,7 +120,7 @@ pub struct DpsEvidenceSnapshotV1 {
     pub claims: Vec<DpsEvidenceClaimSnapshot>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ActionPriorityListV2 {
     pub schema_version: u32,
@@ -128,7 +128,7 @@ pub struct ActionPriorityListV2 {
     pub trailing_comments: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct AplRule {
     pub id: String,
@@ -139,7 +139,7 @@ pub struct AplRule {
     pub condition: Option<AplExpressionNode>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct AplExpressionNode {
     pub id: String,
@@ -147,7 +147,7 @@ pub struct AplExpressionNode {
     pub expression: AplExpression,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(
     tag = "kind",
     rename_all = "kebab-case",
@@ -173,7 +173,7 @@ pub enum AplExpression {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(
     tag = "kind",
     rename_all = "kebab-case",
@@ -188,7 +188,7 @@ pub enum AplBooleanReference {
     TalentSelected { talent_id: String },
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(
     tag = "kind",
     rename_all = "kebab-case",
@@ -199,7 +199,7 @@ pub enum AplNumericOperand {
     Reference { reference: AplNumericReference },
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(
     tag = "kind",
     rename_all = "kebab-case",
@@ -238,7 +238,7 @@ pub enum AplNumericReference {
     FightRemaining,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum AplComparisonOperator {
     Equal,
@@ -249,7 +249,7 @@ pub enum AplComparisonOperator {
     GreaterThanOrEqual,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum AplResource {
     Cinders,
@@ -264,7 +264,7 @@ pub enum AplResource {
     BloodFeathers,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum AplResourceMeasure {
     Current,
@@ -273,7 +273,7 @@ pub enum AplResourceMeasure {
     Percent,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum AplBuff {
     Wildfire,
@@ -330,7 +330,7 @@ pub enum AplBuff {
     OpenWounds,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct NormalizedDpsProfile {
     pub hero_id: String,
@@ -363,7 +363,7 @@ pub struct NormalizedDpsProfile {
     pub uptime_names: BTreeMap<String, String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct AplTargetEffectModel {
     pub id: String,
@@ -373,7 +373,7 @@ pub struct AplTargetEffectModel {
     pub supported_properties: Vec<AplTargetEffectProperty>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(
     tag = "kind",
     rename_all = "kebab-case",
@@ -384,14 +384,26 @@ pub enum AplTargetEffectSource {
     MechanicTargetBuff { mechanic_instance_id: String },
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum AplTargetEffectKind {
     DamageOverTime,
     Debuff,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, TS)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Serialize,
+    Deserialize,
+    TS,
+    schemars::JsonSchema,
+)]
 #[serde(rename_all = "kebab-case")]
 pub enum AplTargetEffectProperty {
     Active,
@@ -399,7 +411,7 @@ pub enum AplTargetEffectProperty {
     Stacks,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ScenarioNoOpAbility {
     pub id: String,
@@ -407,7 +419,19 @@ pub struct ScenarioNoOpAbility {
     pub reason: String,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, TS)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Serialize,
+    Deserialize,
+    TS,
+    schemars::JsonSchema,
+)]
 #[serde(rename_all = "kebab-case")]
 pub enum DpsAbilityKind {
     InfernalWave,
@@ -503,7 +527,7 @@ pub enum DpsAbilityKind {
     WeaponInstantAoe,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum DpsGcdHasteMode {
     None,
@@ -512,7 +536,7 @@ pub enum DpsGcdHasteMode {
     SlowOnly,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct DpsAbilityModel {
     pub id: String,
@@ -552,7 +576,7 @@ pub struct DpsAbilityModel {
     pub mechanic_parameters: BTreeMap<String, f64>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ChannelModel {
     pub duration_ms: u64,
@@ -565,7 +589,7 @@ pub struct ChannelModel {
     pub scale_partial_tick_damage: bool,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct DotModel {
     pub power_coefficient: f64,
@@ -580,7 +604,7 @@ pub struct DotModel {
     pub maximum_stacks: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct DpsTalentModel {
     pub id: String,
@@ -591,7 +615,7 @@ pub struct DpsTalentModel {
     pub reason: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum MechanicClassification {
     Modeled,
@@ -599,7 +623,7 @@ pub enum MechanicClassification {
     Uncovered,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum DynamicMechanicHandler {
     StaticStats,
@@ -610,7 +634,7 @@ pub enum DynamicMechanicHandler {
     ScenarioNoOp,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct DynamicMechanicInstance {
     pub instance_id: String,
@@ -624,7 +648,7 @@ pub struct DynamicMechanicInstance {
     pub reason: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct SimulationProgress {
     pub run_id: String,
@@ -633,7 +657,7 @@ pub struct SimulationProgress {
     pub fraction: f64,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct SimulationResult {
     pub schema_version: u32,
@@ -656,14 +680,14 @@ pub struct SimulationResult {
     pub uptimes: Vec<UptimeResult>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ConfidenceInterval {
     pub low: f64,
     pub high: f64,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct AbilityDamageResult {
     pub ability_id: String,
@@ -678,7 +702,7 @@ pub struct AbilityDamageResult {
     pub mean_targets_hit: f64,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ProcResult {
     pub id: String,
@@ -688,7 +712,7 @@ pub struct ProcResult {
     pub mean_per_minute: f64,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct TargetDamageResult {
     pub target_index: u32,
@@ -698,7 +722,7 @@ pub struct TargetDamageResult {
     pub share: f64,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UptimeResult {
     pub id: String,
@@ -706,7 +730,7 @@ pub struct UptimeResult {
     pub mean_uptime: f64,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum SimulationErrorCode {
     InvalidBuild,
@@ -719,18 +743,22 @@ pub enum SimulationErrorCode {
     SimulationFailed,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS, Error)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS, Error, schemars::JsonSchema)]
 #[error("{message}")]
 #[serde(rename_all = "camelCase")]
 pub struct SimulationError {
+    pub diagnostics: Vec<crate::Diagnostic>,
+    pub diagnostics_truncated: bool,
     pub code: SimulationErrorCode,
     pub message: String,
     pub sources: Vec<String>,
 }
 
 impl SimulationError {
-    pub(crate) fn new(code: SimulationErrorCode, message: impl Into<String>) -> Self {
+    pub fn new(code: SimulationErrorCode, message: impl Into<String>) -> Self {
         Self {
+            diagnostics: vec![],
+            diagnostics_truncated: false,
             code,
             message: message.into(),
             sources: Vec::new(),

@@ -13,5 +13,8 @@ mod support;
 pub(crate) use state::*;
 pub(crate) use support::*;
 
-pub(crate) use apl::{RuntimeAplRule, compile_runtime_apl, fight_threshold_times};
+pub use apl::AplNodeEvaluationTrace;
+pub(crate) use apl::{
+    RuntimeAplRule, compile_runtime_apl, compile_runtime_apl_report, fight_threshold_times,
+};
 pub(crate) use event::*;

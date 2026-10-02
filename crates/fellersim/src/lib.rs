@@ -10,15 +10,22 @@ use std::{
 use std::sync::atomic::AtomicBool;
 
 mod apl_source;
+mod comparison;
+mod diagnostics;
+pub use comparison::*;
+pub use diagnostics::*;
 mod contract;
 mod engine;
 mod heroes;
 pub mod preparation;
 mod rng;
-pub use apl_source::parse_apl;
+pub use apl_source::{AplDocument, AplSourceLocation, parse_apl, parse_apl_document};
+mod inspection;
+pub use inspection::*;
 
 pub use contract::*;
 
+pub use engine::AplNodeEvaluationTrace;
 use engine::*;
 use heroes::*;
 use rng::*;
@@ -184,7 +191,7 @@ mod aggregate;
 mod compiled_profile;
 mod validation;
 
-pub use aggregate::{simulate, simulate_owned, simulate_profile_sweep};
+pub use aggregate::{simulate, simulate_owned, simulate_profile_sweep, simulate_with_samples};
 
 /// Validates an untrusted simulation request without executing it.
 pub fn validate_request(request: &SimulationRequest) -> Result<(), SimulationError> {

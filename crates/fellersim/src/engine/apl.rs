@@ -1,12 +1,12 @@
 use crate::*;
 
-#[cfg(test)]
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) struct AplNodeEvaluationTrace {
-    pub(crate) node_id: String,
-    pub(crate) passed: bool,
-    pub(crate) observed_values: Vec<f64>,
-    pub(crate) short_circuited: bool,
+#[derive(Debug, Clone, PartialEq, serde::Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AplNodeEvaluationTrace {
+    pub node_id: String,
+    pub passed: bool,
+    pub observed_values: Vec<f64>,
+    pub short_circuited: bool,
 }
 
 #[cfg(test)]
@@ -20,6 +20,7 @@ pub(crate) struct AplRuleEvaluationTrace {
 
 #[derive(Debug, Clone)]
 pub(crate) struct RuntimeAplRule {
+    pub(crate) source_rule_index: usize,
     pub(crate) ability_kind: DpsAbilityKind,
     pub(crate) condition: Option<AplExpressionNode>,
     pub(crate) active_from_ms: u64,
@@ -36,13 +37,46 @@ pub(crate) fn compile_runtime_apl(
     profile: &CompiledProfile,
     target_count: u32,
 ) -> (Vec<RuntimeAplRule>, usize) {
+    let (rules, work, _) = compile_apl(apl, profile, target_count, false);
+    (rules, work)
+}
+pub(crate) fn compile_runtime_apl_report(
+    apl: &ActionPriorityListV2,
+    profile: &CompiledProfile,
+    target_count: u32,
+) -> (Vec<RuntimeAplRule>, usize, Vec<crate::AplRuleExplanation>) {
+    compile_apl(apl, profile, target_count, true)
+}
+fn compile_apl(
+    apl: &ActionPriorityListV2,
+    profile: &CompiledProfile,
+    target_count: u32,
+    explain: bool,
+) -> (Vec<RuntimeAplRule>, usize, Vec<crate::AplRuleExplanation>) {
     let mut work = apl.rules.len();
+    let mut explanations = Vec::new();
     let rules = apl
         .rules
         .iter()
-        .filter_map(|rule| {
+        .enumerate()
+        .filter_map(|(source_rule_index, rule)| {
+            if explain {
+                explanations.push(crate::AplRuleExplanation {
+                    rule_id: rule.id.clone(),
+                    ability_id: rule.ability_id.clone(),
+                    status: "disabled".into(),
+                    original_condition: rule.condition.clone(),
+                    resolved_condition: None,
+                    active_from_ms: None,
+                    active_until_ms: None,
+                });
+            }
+            let mut explanation = explanations.last_mut();
             if !rule.enabled {
                 return None;
+            }
+            if let Some(e) = explanation.as_deref_mut() {
+                e.status = "unavailable".into();
             }
             let ability_kind = ability_kind_from_id(&rule.ability_id)?;
             // Default rotations list alternative weapons and optional skills.
@@ -52,7 +86,12 @@ pub(crate) fn compile_runtime_apl(
                 None => None,
                 Some(condition) => {
                     match fold_apl_expression(condition, profile, target_count, &mut work) {
-                        FoldedAplExpression::Static(false) => return None,
+                        FoldedAplExpression::Static(false) => {
+                            if let Some(e) = explanation.as_deref_mut() {
+                                e.status = "statically-false".into();
+                            }
+                            return None;
+                        }
                         FoldedAplExpression::Static(true) => None,
                         FoldedAplExpression::Dynamic(condition) => Some(condition),
                     }
@@ -63,7 +102,22 @@ pub(crate) fn compile_runtime_apl(
                 .map_or((condition, 0, u64::MAX), |window| {
                     (None, window.0, window.1)
                 });
+            if let Some(e) = explanation {
+                e.status = if condition != rule.condition
+                    || active_from_ms != 0
+                    || active_until_ms != u64::MAX
+                {
+                    "simplified"
+                } else {
+                    "active"
+                }
+                .into();
+                e.resolved_condition = condition.clone();
+                e.active_from_ms = Some(active_from_ms);
+                e.active_until_ms = (active_until_ms != u64::MAX).then_some(active_until_ms);
+            }
             Some(RuntimeAplRule {
+                source_rule_index,
                 ability_kind,
                 condition,
                 active_from_ms,
@@ -71,7 +125,7 @@ pub(crate) fn compile_runtime_apl(
             })
         })
         .collect();
-    (rules, work)
+    (rules, work, explanations)
 }
 
 fn extract_fight_window(node: &AplExpressionNode) -> Option<(u64, u64)> {
@@ -233,7 +287,69 @@ fn compare_apl_values(left: f64, operator: AplComparisonOperator, right: f64) ->
 }
 
 impl Iteration<'_> {
+    pub(crate) fn trace_state(&self) -> std::collections::BTreeMap<String, f64> {
+        let mut state = std::collections::BTreeMap::new();
+        for resource in crate::supported_resources(&self.profile.hero_id) {
+            let id = serde_json::to_value(resource)
+                .unwrap()
+                .as_str()
+                .unwrap()
+                .replace('-', "_");
+            state.insert(
+                format!("resource.{id}.current"),
+                self.evaluate_numeric_reference(&AplNumericReference::Resource {
+                    resource,
+                    measure: AplResourceMeasure::Current,
+                }),
+            );
+        }
+        for buff in crate::supported_buffs(&self.profile.source) {
+            let id = serde_json::to_value(buff)
+                .unwrap()
+                .as_str()
+                .unwrap()
+                .replace('-', "_");
+            state.insert(
+                format!("buff.{id}.stacks"),
+                f64::from(self.buff_stacks(buff)),
+            );
+            state.insert(
+                format!("buff.{id}.remains"),
+                self.buff_remaining_ms(buff) as f64 / 1000.0,
+            );
+        }
+        for effect in &self.profile.apl_target_effects {
+            if let Some((remaining, stacks)) = self.target_effect_state(&effect.id) {
+                state.insert(
+                    format!("debuff.{}.remains", effect.id),
+                    remaining as f64 / 1000.0,
+                );
+                state.insert(format!("debuff.{}.stacks", effect.id), f64::from(stacks));
+            }
+        }
+        for rule in &self.common.runtime_action_priority_list {
+            state.insert(
+                format!(
+                    "cooldown.{}.remains",
+                    self.profile
+                        .ability(rule.ability_kind)
+                        .unwrap()
+                        .id
+                        .replace('-', "_")
+                ),
+                self.cooldown_remaining_ms(rule.ability_kind) as f64 / 1000.0,
+            );
+        }
+        state
+    }
+
     pub(crate) fn choose_action(&self) -> Option<usize> {
+        self.choose_action_observed(None)
+    }
+    pub(crate) fn choose_action_observed(
+        &self,
+        mut observation: Option<&mut Vec<crate::TraceRule>>,
+    ) -> Option<usize> {
         let mut pending_rule_scans = 0_u8;
         for rule in &self.common.runtime_action_priority_list {
             pending_rule_scans += 1;
@@ -243,9 +359,22 @@ impl Iteration<'_> {
                 }
                 pending_rule_scans = 0;
             }
+            if let Some(trace) = observation.as_deref_mut() {
+                trace.push(crate::TraceRule {
+                    rule_id: self.common.action_priority_list.rules[rule.source_rule_index]
+                        .id
+                        .clone(),
+                    blocker: None,
+                    nodes: vec![],
+                    selected: false,
+                });
+            }
             if self.common.now_ms < rule.active_from_ms
                 || self.common.now_ms >= rule.active_until_ms
             {
+                if let Some(trace) = observation.as_deref_mut() {
+                    trace.last_mut().unwrap().blocker = Some("outside-fight-window".into());
+                }
                 continue;
             }
             if !self.common.execution.charge(1) {
@@ -254,18 +383,33 @@ impl Iteration<'_> {
             // Conditions are pure observations. Resolve availability first so
             // cooling-down or resource-blocked abilities do not repeatedly walk
             // their expression trees after every periodic damage event.
-            let Some(cast) = self.can_cast(rule.ability_kind) else {
-                continue;
+            let cast = match self.cast_availability(rule.ability_kind) {
+                Ok(cast) => cast,
+                Err(blocker) => {
+                    if let Some(trace) = observation.as_deref_mut() {
+                        trace.last_mut().unwrap().blocker = Some(blocker.into());
+                    }
+                    continue;
+                }
             };
-            let passed = rule
-                .condition
-                .as_ref()
-                .is_none_or(|condition| self.evaluate_expression_untraced(condition));
+            let passed = rule.condition.as_ref().is_none_or(|condition| {
+                if let Some(trace) = observation.as_deref_mut() {
+                    self.evaluate_expression_traced(condition, &mut trace.last_mut().unwrap().nodes)
+                } else {
+                    self.evaluate_expression_untraced(condition)
+                }
+            });
             if !passed {
+                if let Some(trace) = observation.as_deref_mut() {
+                    trace.last_mut().unwrap().blocker = Some("condition-false".into());
+                }
                 continue;
             }
             if pending_rule_scans > 0 && !self.common.execution.charge(1) {
                 return None;
+            }
+            if let Some(trace) = observation.as_deref_mut() {
+                trace.last_mut().unwrap().selected = true;
             }
             return Some(cast);
         }
@@ -316,7 +460,6 @@ impl Iteration<'_> {
         self.evaluate_expression_traced(node, &mut Vec::new())
     }
 
-    #[cfg(test)]
     fn evaluate_expression_traced(
         &self,
         node: &AplExpressionNode,
@@ -408,7 +551,6 @@ impl Iteration<'_> {
         }
     }
 
-    #[cfg(test)]
     fn record_short_circuited(
         &self,
         children: &[AplExpressionNode],
@@ -419,7 +561,6 @@ impl Iteration<'_> {
         }
     }
 
-    #[cfg(test)]
     fn record_short_circuited_node(
         &self,
         node: &AplExpressionNode,

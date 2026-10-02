@@ -361,6 +361,8 @@ pub(super) fn prepare(
         .find(|m| string(m, "classification") == "uncovered")
     {
         return Err(SimulationError {
+            diagnostics: vec![],
+            diagnostics_truncated: false,
             code: SimulationErrorCode::UncoveredMechanics,
             message: format!("Uncovered mechanic: {}", string(m, "sourceName")),
             sources: vec![string(m, "sourceId").into()],

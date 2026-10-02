@@ -346,6 +346,8 @@ pub(crate) fn validate(request: &SimulationRequest) -> Result<u64, SimulationErr
         .collect::<Vec<_>>();
     if !partial_claims.is_empty() {
         return Err(SimulationError {
+            diagnostics: vec![],
+            diagnostics_truncated: false,
             code: SimulationErrorCode::UncoveredMechanics,
             message: "The loadout contains outgoing-DPS mechanics without current evidence.".into(),
             sources: partial_claims,
@@ -413,6 +415,8 @@ pub(crate) fn validate(request: &SimulationRequest) -> Result<u64, SimulationErr
         .collect::<Vec<_>>();
     if !uncovered.is_empty() {
         return Err(SimulationError {
+            diagnostics: vec![],
+            diagnostics_truncated: false,
             code: SimulationErrorCode::UncoveredMechanics,
             message: "The loadout contains combat mechanics that are not covered by this model."
                 .into(),
@@ -533,6 +537,8 @@ pub(crate) fn validate(request: &SimulationRequest) -> Result<u64, SimulationErr
     for ability in &request.profile.abilities {
         if !hero_allows_ability(&request.hero_id, ability.kind) {
             return Err(SimulationError {
+                diagnostics: vec![],
+                diagnostics_truncated: false,
                 code: SimulationErrorCode::UncoveredMechanics,
                 message: format!(
                     "{} does not belong to the current {} ability contract",
@@ -627,6 +633,8 @@ pub(crate) fn validate(request: &SimulationRequest) -> Result<u64, SimulationErr
             && ability.spirit_cost <= 0.0
         {
             return Err(SimulationError {
+                diagnostics: vec![],
+                diagnostics_truncated: false,
                 code: SimulationErrorCode::InvalidBuild,
                 message: "an instantaneous action requires a cooldown, cast, global cooldown, channel, or resource lock"
                     .into(),
@@ -639,6 +647,8 @@ pub(crate) fn validate(request: &SimulationRequest) -> Result<u64, SimulationErr
             .any(|key| !ability.mechanic_parameters.contains_key(*key))
         {
             return Err(SimulationError {
+                diagnostics: vec![],
+                diagnostics_truncated: false,
                 code: SimulationErrorCode::UncoveredMechanics,
                 message: format!(
                     "{} is missing an extracted mechanic parameter",
@@ -651,6 +661,8 @@ pub(crate) fn validate(request: &SimulationRequest) -> Result<u64, SimulationErr
             && ability_param(ability, parameter_key!("hitsPerTarget")).round() < 1.0
         {
             return Err(SimulationError {
+                diagnostics: vec![],
+                diagnostics_truncated: false,
                 code: SimulationErrorCode::InvalidBuild,
                 message: "Detonate must have at least one extracted hit per target".into(),
                 sources: vec![ability.id.clone()],
@@ -694,6 +706,8 @@ pub(crate) fn validate(request: &SimulationRequest) -> Result<u64, SimulationErr
                     > ability_param(ability, parameter_key!("maximumJumpPeriodSeconds")))
         {
             return Err(SimulationError {
+                diagnostics: vec![],
+                diagnostics_truncated: false,
                 code: SimulationErrorCode::InvalidBuild,
                 message: "Fire Frogs movement parameters must form positive extracted ranges"
                     .into(),
@@ -706,6 +720,8 @@ pub(crate) fn validate(request: &SimulationRequest) -> Result<u64, SimulationErr
         ) && ability_seconds_parameter(ability, parameter_key!("pulsePeriodSeconds")) == 0
         {
             return Err(SimulationError {
+                diagnostics: vec![],
+                diagnostics_truncated: false,
                 code: SimulationErrorCode::InvalidBuild,
                 message: format!(
                     "{} must have a positive extracted pulse period",
@@ -718,6 +734,8 @@ pub(crate) fn validate(request: &SimulationRequest) -> Result<u64, SimulationErr
             && ability_seconds_parameter(ability, parameter_key!("volleyPeriodSeconds")) == 0
         {
             return Err(SimulationError {
+                diagnostics: vec![],
+                diagnostics_truncated: false,
                 code: SimulationErrorCode::InvalidBuild,
                 message: "Wrath of Winter must have a positive extracted volley period".into(),
                 sources: vec![ability.id.clone()],
@@ -752,6 +770,8 @@ pub(crate) fn validate(request: &SimulationRequest) -> Result<u64, SimulationErr
             .copied()
             .collect::<Vec<_>>();
         return Err(SimulationError {
+            diagnostics: vec![],
+            diagnostics_truncated: false,
             code: SimulationErrorCode::UncoveredMechanics,
             message: "The current Ardeos scenario no-op ability coverage is incomplete.".into(),
             sources: missing
@@ -802,6 +822,8 @@ pub(crate) fn validate(request: &SimulationRequest) -> Result<u64, SimulationErr
         {
             let Some(maximum_reach) = ruby_storm_maximum_forward_overlap_distance(mechanic) else {
                 return Err(SimulationError {
+                    diagnostics: vec![],
+                    diagnostics_truncated: false,
                     code: SimulationErrorCode::UncoveredMechanics,
                     message: "Ruby Storm is missing movement parameters required by the current max-range scenario".into(),
                     sources: vec![mechanic.source_id.clone()],
@@ -813,6 +835,8 @@ pub(crate) fn validate(request: &SimulationRequest) -> Result<u64, SimulationErr
             );
             if maximum_reach >= request.scenario.target_distance_units && !supported_melee {
                 return Err(SimulationError {
+                    diagnostics: vec![],
+                    diagnostics_truncated: false,
                     code: SimulationErrorCode::UncoveredMechanics,
                     message: "Ruby Storm's accepted overlap approximation covers only the maintained melee scenarios".into(),
                     sources: vec![mechanic.source_id.clone()],
@@ -827,6 +851,8 @@ pub(crate) fn validate(request: &SimulationRequest) -> Result<u64, SimulationErr
                     <= 0.0
             {
                 return Err(SimulationError {
+                    diagnostics: vec![],
+                    diagnostics_truncated: false,
                     code: SimulationErrorCode::UncoveredMechanics,
                     message: "Ruby Storm requires positive movement speed and the reviewed zero gem-power coefficient".into(),
                     sources: vec![mechanic.source_id.clone()],
@@ -900,6 +926,8 @@ fn validate_apl_target_effect_catalog(
         };
         if !source_is_valid {
             return Err(SimulationError {
+                diagnostics: vec![],
+                diagnostics_truncated: false,
                 code: SimulationErrorCode::InvalidBuild,
                 message: format!(
                     "{} does not have an evaluable target-effect source",
@@ -914,6 +942,8 @@ fn validate_apl_target_effect_catalog(
 
 fn invalid_apl(message: impl Into<String>, sources: Vec<String>) -> SimulationError {
     SimulationError {
+        diagnostics: vec![],
+        diagnostics_truncated: false,
         code: SimulationErrorCode::InvalidActionPriorityList,
         message: message.into(),
         sources,
@@ -937,20 +967,87 @@ pub(crate) fn validate_action_priority_list(
         ));
     }
     let mut ids = BTreeSet::new();
-    for rule in &apl.rules {
-        validate_apl_id(&rule.id, &mut ids)?;
-        if !rule.enabled {
-            if let Some(condition) = &rule.condition {
-                validate_apl_node_ids(condition, &mut ids, 0)?;
+    let mut diagnostics = Vec::new();
+    for (index, rule) in apl.rules.iter().enumerate() {
+        let checked = (|| {
+            validate_apl_id(&rule.id, &mut ids)?;
+            if !rule.enabled {
+                if let Some(condition) = &rule.condition {
+                    validate_apl_node_ids(condition, &mut ids, 0)?;
+                }
+                return Ok(());
             }
-            continue;
-        }
-        validate_apl_ability(profile, &rule.ability_id, false)?;
-        if let Some(condition) = &rule.condition {
-            validate_apl_expression(condition, profile, &mut ids, 0)?;
+            validate_apl_ability(profile, &rule.ability_id, false)?;
+            if let Some(condition) = &rule.condition {
+                validate_apl_expression(condition, profile, &mut ids, 0)?;
+            }
+            Ok::<(), SimulationError>(())
+        })();
+        if let Err(error) = checked {
+            let truncated = error.diagnostics_truncated;
+            let mut found = apl_diagnostics(error);
+            for d in &mut found {
+                d.path = Some(format!("/rules/{index}"));
+                d.identifiers.push(rule.id.clone());
+            }
+            diagnostics.extend(found);
+            if truncated && diagnostics.len() <= MAX_DIAGNOSTICS {
+                diagnostics.push(Diagnostic::error(
+                    "diagnostics-truncated",
+                    "Further semantic issues were omitted.",
+                ));
+            }
+            if diagnostics.len() > MAX_DIAGNOSTICS {
+                break;
+            }
         }
     }
-    Ok(())
+    if diagnostics.is_empty() {
+        Ok(())
+    } else {
+        Err(SimulationError::from_diagnostics(
+            SimulationErrorCode::InvalidActionPriorityList,
+            diagnostics,
+        ))
+    }
+}
+
+fn apl_diagnostics(error: SimulationError) -> Vec<Diagnostic> {
+    if !error.diagnostics.is_empty() {
+        return error.diagnostics;
+    }
+    let mut diagnostic = Diagnostic::error("invalid-action-priority-list", error.message)
+        .help("Inspect catalog apl-references for the same hero or build.");
+    diagnostic.identifiers = error.sources;
+    vec![diagnostic]
+}
+fn independent_apl_checks(
+    checks: impl Iterator<Item = Result<(), SimulationError>>,
+) -> Result<(), SimulationError> {
+    let mut diagnostics = Vec::new();
+    for check in checks {
+        if let Err(error) = check {
+            let truncated = error.diagnostics_truncated;
+            diagnostics.extend(apl_diagnostics(error));
+            if truncated && diagnostics.len() <= MAX_DIAGNOSTICS {
+                diagnostics.push(Diagnostic::error(
+                    "diagnostics-truncated",
+                    "Further semantic issues were omitted.",
+                ));
+            }
+            if diagnostics.len() > MAX_DIAGNOSTICS {
+                break;
+            }
+        }
+    }
+    if diagnostics.is_empty() {
+        Ok(())
+    } else {
+        Err(SimulationError::from_diagnostics(
+            SimulationErrorCode::InvalidActionPriorityList,
+            diagnostics,
+        ))
+    }
 }
 
 fn validate_apl_id(id: &str, ids: &mut BTreeSet<String>) -> Result<(), SimulationError> {
@@ -1054,7 +1151,7 @@ fn hero_allows_loadout_dependent_ability(hero_id: &str, kind: DpsAbilityKind) ->
     }
 }
 
-fn validate_apl_expression(
+pub(crate) fn validate_apl_expression(
     node: &AplExpressionNode,
     profile: &NormalizedDpsProfile,
     ids: &mut BTreeSet<String>,
@@ -1075,10 +1172,11 @@ fn validate_apl_expression(
                     vec![node.id.clone()],
                 ));
             }
-            for child in children {
-                validate_apl_expression(child, profile, ids, depth + 1)?;
-            }
-            Ok(())
+            independent_apl_checks(
+                children
+                    .iter()
+                    .map(|child| validate_apl_expression(child, profile, ids, depth + 1)),
+            )
         }
         AplExpression::Not { child } => validate_apl_expression(child, profile, ids, depth + 1),
         AplExpression::BooleanReference { reference } => match reference {
@@ -1160,10 +1258,11 @@ fn validate_apl_expression(
                 }
             }
         },
-        AplExpression::Comparison { left, right, .. } => {
-            validate_apl_operand(left, profile)?;
-            validate_apl_operand(right, profile)
-        }
+        AplExpression::Comparison { left, right, .. } => independent_apl_checks(
+            [left, right]
+                .into_iter()
+                .map(|operand| validate_apl_operand(operand, profile)),
+        ),
     }
 }
 
@@ -1235,11 +1334,22 @@ fn validate_target_effect(
     }
 }
 
-fn validate_apl_resource(
+pub(crate) fn validate_apl_resource(
     resource: AplResource,
     profile: &NormalizedDpsProfile,
 ) -> Result<(), SimulationError> {
-    let valid = match profile.hero_id.as_str() {
+    let valid = resource_supported(resource, &profile.hero_id);
+    if valid {
+        Ok(())
+    } else {
+        Err(invalid_apl(
+            "The APL references a resource that does not belong to this hero.",
+            vec![format!("{resource:?}")],
+        ))
+    }
+}
+pub(crate) fn resource_supported(resource: AplResource, hero: &str) -> bool {
+    match hero {
         "rime" => matches!(
             resource,
             AplResource::Anima | AplResource::WinterOrbs | AplResource::Spirit
@@ -1255,18 +1365,13 @@ fn validate_apl_resource(
             resource,
             AplResource::Cinders | AplResource::Embers | AplResource::Spirit
         ),
-    };
-    if valid {
-        Ok(())
-    } else {
-        Err(invalid_apl(
-            "The APL references a resource that does not belong to this hero.",
-            vec![format!("{resource:?}")],
-        ))
     }
 }
 
-fn validate_apl_buff(buff: AplBuff, profile: &NormalizedDpsProfile) -> Result<(), SimulationError> {
+pub(crate) fn validate_apl_buff(
+    buff: AplBuff,
+    profile: &NormalizedDpsProfile,
+) -> Result<(), SimulationError> {
     let valid = match profile.hero_id.as_str() {
         "rime" => matches!(
             buff,
@@ -1425,6 +1530,8 @@ fn validate_rime_ability_values(ability: &DpsAbilityModel) -> Result<(), Simulat
             ) == 0);
     if invalid {
         return Err(SimulationError {
+            diagnostics: vec![],
+            diagnostics_truncated: false,
             code: SimulationErrorCode::InvalidBuild,
             message: format!("{} has invalid executable parameters", ability.name),
             sources: vec![ability.id.clone()],
@@ -1438,6 +1545,8 @@ fn validate_modeled_mechanic(mechanic: &DynamicMechanicInstance) -> Result<(), S
         && !is_known_hero_source_mechanic(mechanic)
     {
         return Err(SimulationError {
+            diagnostics: vec![],
+            diagnostics_truncated: false,
             code: SimulationErrorCode::UncoveredMechanics,
             message: format!(
                 "{} has no current executable hero-source handler",
@@ -1471,6 +1580,8 @@ fn validate_modeled_mechanic(mechanic: &DynamicMechanicInstance) -> Result<(), S
         .collect::<Vec<_>>();
     if !missing.is_empty() {
         return Err(SimulationError {
+            diagnostics: vec![],
+            diagnostics_truncated: false,
             code: SimulationErrorCode::UncoveredMechanics,
             message: format!(
                 "{} is missing extracted parameters: {}",
@@ -1494,6 +1605,8 @@ fn validate_modeled_mechanic(mechanic: &DynamicMechanicInstance) -> Result<(), S
                 == 0)
     {
         return Err(SimulationError {
+            diagnostics: vec![],
+            diagnostics_truncated: false,
             code: SimulationErrorCode::InvalidBuild,
             message: format!(
                 "{} must use positive extracted effect timings and stack counts",
@@ -1563,6 +1676,8 @@ pub(crate) fn validate_talent(
     };
     if expected_prefix.is_empty() || !talent.id.starts_with(expected_prefix) {
         return Err(SimulationError {
+            diagnostics: vec![],
+            diagnostics_truncated: false,
             code: SimulationErrorCode::UncoveredMechanics,
             message: format!(
                 "Talent {} does not belong to the current {hero_id} contract",
@@ -2150,6 +2265,8 @@ pub(crate) fn validate_talent(
         ) => &["cooldownAccelerationMultiplier", "durationSeconds"],
         _ => {
             return Err(SimulationError {
+                diagnostics: vec![],
+                diagnostics_truncated: false,
                 code: SimulationErrorCode::UncoveredMechanics,
                 message: format!(
                     "Talent {} has no versioned handler for mechanic {}",
@@ -2171,6 +2288,8 @@ pub(crate) fn validate_talent(
         .collect::<Vec<_>>();
     if !missing.is_empty() {
         return Err(SimulationError {
+            diagnostics: vec![],
+            diagnostics_truncated: false,
             code: SimulationErrorCode::UncoveredMechanics,
             message: format!(
                 "Talent {} is missing extracted parameters: {}",
@@ -2184,6 +2303,8 @@ pub(crate) fn validate_talent(
         && ms_param(talent, parameter_key!("decayIntervalSeconds")) == 0
     {
         return Err(SimulationError {
+            diagnostics: vec![],
+            diagnostics_truncated: false,
             code: SimulationErrorCode::InvalidBuild,
             message: "Striker's Aim must use a positive stack-decay interval".into(),
             sources: vec![talent.id.clone()],
@@ -2201,6 +2322,8 @@ pub(crate) fn validate_talent(
         };
     if !valid_classification {
         return Err(SimulationError {
+            diagnostics: vec![],
+            diagnostics_truncated: false,
             code: SimulationErrorCode::UncoveredMechanics,
             message: format!("Talent {} requires a current modeled handler", talent.id),
             sources: vec![talent.id.clone()],
@@ -2257,6 +2380,8 @@ fn validate_rime_talent_values(talent: &DpsTalentModel) -> Result<(), Simulation
         .any(|key| param_u32(talent, ParameterKey::new(key)) == 0);
     if invalid_timing || invalid_probability || invalid_count {
         return Err(SimulationError {
+            diagnostics: vec![],
+            diagnostics_truncated: false,
             code: SimulationErrorCode::InvalidBuild,
             message: format!("Talent {} has invalid executable parameters", talent.id),
             sources: vec![talent.id.clone()],

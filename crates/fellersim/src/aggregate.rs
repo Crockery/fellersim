@@ -30,7 +30,10 @@ where
         cancelled,
         progress,
         cfg!(feature = "strict-work-budget"),
+        MAX_SIMULATION_WORKERS,
+        None,
     )
+    .map(|(result, _)| result)
 }
 
 /// Runs a simulation while enforcing the browser-profile work-budget margin.
@@ -46,7 +49,15 @@ pub fn simulate_profile_sweep<F>(
 where
     F: Fn(SimulationProgress) + Sync,
 {
-    simulate_inner(request, cancelled, progress, true)
+    simulate_inner(
+        request,
+        cancelled,
+        progress,
+        true,
+        MAX_SIMULATION_WORKERS,
+        None,
+    )
+    .map(|(result, _)| result)
 }
 
 fn simulate_inner<F>(
@@ -54,7 +65,9 @@ fn simulate_inner<F>(
     cancelled: &AtomicBool,
     progress: F,
     enforce_profile_budget: bool,
-) -> Result<SimulationResult, SimulationError>
+    max_workers: usize,
+    metric: Option<crate::ComparisonMetric>,
+) -> Result<(SimulationResult, Vec<f64>), SimulationError>
 where
     F: Fn(SimulationProgress) + Sync,
 {
@@ -69,12 +82,14 @@ where
     let workers = simulation_worker_count(
         thread::available_parallelism()
             .map(usize::from)
-            .unwrap_or(1),
+            .unwrap_or(1)
+            .min(max_workers.clamp(1, MAX_SIMULATION_WORKERS)),
         request.iterations,
     );
     let progress_stride = (request.iterations / 100).max(1);
     let completed = AtomicU32::new(0);
     let mut accumulator = SimulationAccumulator::new(request, &profile, enforce_profile_budget);
+    let mut samples = Vec::new();
     let mut window_start = 0_u32;
     while window_start < request.iterations {
         if cancelled.load(AtomicOrdering::Relaxed) {
@@ -161,11 +176,19 @@ where
             ));
         }
         for (_, result) in results {
+            if let Some(metric) = metric {
+                samples.push(
+                    match metric {
+                        crate::ComparisonMetric::TotalDps => result.damage,
+                        crate::ComparisonMetric::PrimaryTargetDps => result.targets[0],
+                    } / (ENCOUNTER_DURATION_MS as f64 / 1000.0),
+                );
+            }
             accumulator.push(result)?;
         }
         window_start = window_end;
     }
-    accumulator.finish(request, &profile)
+    Ok((accumulator.finish(request, &profile)?, samples))
 }
 
 fn cancelled_error() -> SimulationError {
@@ -183,7 +206,6 @@ where
     simulate(&request, &cancelled, progress)
 }
 
-#[cfg(test)]
 pub(crate) fn aggregate(
     request: &SimulationRequest,
     profile: &CompiledProfile,
@@ -413,6 +435,8 @@ impl SimulationAccumulator {
                     || mean_per_minute < 0.0
                 {
                     return Err(SimulationError {
+                        diagnostics: vec![],
+                        diagnostics_truncated: false,
                         code: SimulationErrorCode::SimulationFailed,
                         message: "simulation produced an invalid proc result".into(),
                         sources: vec![source.id.clone()],
@@ -441,6 +465,8 @@ impl SimulationAccumulator {
             .map(|(id, total)| {
                 if !id.starts_with("dot:") && !id.starts_with("buff:") {
                     return Err(SimulationError {
+                        diagnostics: vec![],
+                        diagnostics_truncated: false,
                         code: SimulationErrorCode::SimulationFailed,
                         message: "simulation produced a non-duration uptime result".into(),
                         sources: vec![id],
@@ -449,6 +475,8 @@ impl SimulationAccumulator {
                 let mean_uptime = total / count;
                 if !mean_uptime.is_finite() || !(0.0..=1.0).contains(&mean_uptime) {
                     return Err(SimulationError {
+                        diagnostics: vec![],
+                        diagnostics_truncated: false,
                         code: SimulationErrorCode::SimulationFailed,
                         message: "simulation produced an invalid uptime result".into(),
                         sources: vec![id],
@@ -456,6 +484,8 @@ impl SimulationAccumulator {
                 }
                 let Some(name) = profile.uptime_names.get(&id) else {
                     return Err(SimulationError {
+                        diagnostics: vec![],
+                        diagnostics_truncated: false,
                         code: SimulationErrorCode::SimulationFailed,
                         message: "simulation produced an unnamed uptime result".into(),
                         sources: vec![id],
@@ -519,4 +549,25 @@ impl SimulationAccumulator {
             uptimes: uptime_results,
         })
     }
+}
+
+/// Execute within a caller-owned worker budget, optionally retaining ordered samples.
+pub fn simulate_with_samples<F>(
+    request: &SimulationRequest,
+    cancelled: &AtomicBool,
+    progress: F,
+    max_workers: usize,
+    metric: Option<crate::ComparisonMetric>,
+) -> Result<(SimulationResult, Vec<f64>), SimulationError>
+where
+    F: Fn(SimulationProgress) + Sync,
+{
+    simulate_inner(
+        request,
+        cancelled,
+        progress,
+        cfg!(feature = "strict-work-budget"),
+        max_workers,
+        metric,
+    )
 }

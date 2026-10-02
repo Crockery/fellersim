@@ -30,12 +30,13 @@ and conditions:
 - [Gunde](default-apls/gunde.apl)
 
 These files are included in release archives. Pass one to `--apl`, or copy and edit
-it to try a different rotation. The CLI requires an explicit `--apl` path.
+it to try a different rotation. The same files are embedded in the executable. Use `--default-apl` to resolve
+the character’s hero automatically, or `apl default --hero ID` to save a copy.
 
 ## Inputs and reproducibility
 
 In Fellership's Character Planner, select **Export build** and pass the downloaded
-JSON file directly to `--character`. Supply a separate `--apl` file for the same
+JSON file directly to `--character`. Use `--default-apl` or supply a separate `--apl` file for the same
 hero:
 
 ```sh
@@ -85,9 +86,31 @@ and Gunde. `fellersim --version` reports the simulator and bundled data/model
 versions. Results include the game build, model, seed, and evidence summaries;
 these make the assumptions and approximations of a run inspectable.
 
-`--json` writes the result to stdout. Progress/errors use stderr; errors exit
-nonzero. Ctrl+C cancels an active run. Worker count is automatically selected
-with the engine's existing four-worker maximum.
+`--json` writes one versioned response to stdout, including diagnostics on errors.
+Human-readable output is the default. Machine results default to a compact summary;
+`--detail full` includes all breakdowns and evidence. Progress uses stderr and
+`--quiet` suppresses it. Ctrl+C and `--timeout SECONDS` cancel active work.
+Worker count is automatically selected with the engine's four-worker maximum.
+
+## Discovery and automation
+
+Read the [agent workflow guide](agent-guide.md) for structured diagnostics,
+request documents, partial batch results, paired comparisons, and reproducible
+APL traces.
+
+```sh
+fellersim describe --json
+fellersim catalog equipment --hero firemage --position weapon --json
+fellersim character init --hero firemage > character.json
+fellersim prepare --character character.json --default-apl --json
+fellersim run --input examples/request.json --json
+fellersim compare --input examples/variants.json --baseline original --json
+```
+
+`describe` generates the command reference from this executable.
+`schema DOCUMENT` emits Draft 2020-12 schemas for inputs and responses.
+The workflow guide explains exit codes and versioned output; no package manager
+or language SDK is required.
 
 ## Building and contributing
 

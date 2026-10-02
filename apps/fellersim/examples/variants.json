@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "options": {
+    "iterations": 1000,
+    "targets": 1,
+    "seed": "0123456789abcdef"
+  },
+  "cases": [
+    {
+      "id": "original",
+      "character": {
+        "kind": "file",
+        "path": "ardeos.json"
+      },
+      "apl": {
+        "kind": "default"
+      }
+    },
+    {
+      "id": "same-build-check",
+      "character": {
+        "kind": "file",
+        "path": "ardeos.json"
+      },
+      "apl": {
+        "kind": "default"
+      }
+    }
+  ]
+}

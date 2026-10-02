@@ -53,6 +53,8 @@ impl CompiledParameters {
             Ok(())
         } else {
             Err(SimulationError {
+                diagnostics: vec![],
+                diagnostics_truncated: false,
                 code: SimulationErrorCode::UncoveredMechanics,
                 message: format!(
                     "{source_name} is missing extracted parameters: {}",
@@ -109,6 +111,8 @@ impl CompiledTalent {
     fn compile(source: &DpsTalentModel) -> Result<Self, SimulationError> {
         let parameters = CompiledParameters::compile(&source.parameters)?;
         let kind = CompiledTalentKind::from_id(&source.id).ok_or_else(|| SimulationError {
+            diagnostics: vec![],
+            diagnostics_truncated: false,
             code: SimulationErrorCode::UncoveredMechanics,
             message: format!("{} has no typed runtime talent configuration", source.id),
             sources: vec![source.id.clone()],
@@ -340,6 +344,8 @@ fn compiled_mechanic_kind(
         MechanicClassification::ScenarioNoOp => CompiledMechanicKind::ScenarioNoOp,
         MechanicClassification::Uncovered => {
             return Err(SimulationError {
+                diagnostics: vec![],
+                diagnostics_truncated: false,
                 code: SimulationErrorCode::UncoveredMechanics,
                 message: format!("{} has no executable runtime variant", source.source_name),
                 sources: vec![source.source_id.clone()],
@@ -355,6 +361,8 @@ fn compiled_mechanic_kind(
             DynamicMechanicHandler::HeroSource => {
                 CompiledMechanicKind::HeroSource(hero_source_kind(source).ok_or_else(|| {
                     SimulationError {
+                        diagnostics: vec![],
+                        diagnostics_truncated: false,
                         code: SimulationErrorCode::UncoveredMechanics,
                         message: format!(
                             "{} has no typed runtime hero-source variant",
@@ -366,6 +374,8 @@ fn compiled_mechanic_kind(
             }
             DynamicMechanicHandler::ScenarioNoOp => {
                 return Err(SimulationError {
+                    diagnostics: vec![],
+                    diagnostics_truncated: false,
                     code: SimulationErrorCode::InvalidBuild,
                     message: format!(
                         "{} is modeled but has no executable handler",
@@ -868,6 +878,8 @@ fn validate_compiled_mechanic_parameters(
             || parameters.contains(parameter_key!("triggerDamageFraction"));
         if !has_probability || !has_damage {
             return Err(SimulationError {
+                diagnostics: vec![],
+                diagnostics_truncated: false,
                 code: SimulationErrorCode::UncoveredMechanics,
                 message: format!(
                     "{} is missing a proc probability or damage parameter",

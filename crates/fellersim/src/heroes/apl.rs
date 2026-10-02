@@ -1,16 +1,25 @@
 use crate::*;
 
 impl Iteration<'_> {
+    #[cfg(test)]
     pub(crate) fn can_cast(&self, kind: DpsAbilityKind) -> Option<usize> {
+        self.cast_availability(kind).ok()
+    }
+    pub(crate) fn cast_availability(&self, kind: DpsAbilityKind) -> Result<usize, &'static str> {
         if kind == DpsAbilityKind::TariqAttack {
-            return None;
+            return Err("triggered-only");
         }
-        let index = self.common.abilities_by_kind.get(&kind).copied()?;
+        let index = self
+            .common
+            .abilities_by_kind
+            .get(&kind)
+            .copied()
+            .ok_or("unavailable-ability")?;
         let free_cold_snap = kind == DpsAbilityKind::ColdSnap
             && self.hero.rime().navir_free_cold_snaps > 0
             && self.common.now_ms < self.hero.rime().navir_free_until;
         if !free_cold_snap && self.cooldown_remaining_ms(kind) > 0 {
-            return None;
+            return Err("cooldown");
         }
         let ability = &self.profile.abilities[index];
         if kind == DpsAbilityKind::Detonate
@@ -18,10 +27,10 @@ impl Iteration<'_> {
             && !(self.hero.ardeos().apocalyptic_surge > 0
                 && self.common.now_ms < self.hero.ardeos().apocalyptic_surge_until)
         {
-            return None;
+            return Err("resource:embers");
         }
         if kind == DpsAbilityKind::Incinerate && self.shared.spirit < ability.spirit_cost {
-            return None;
+            return Err("resource:spirit");
         }
         if matches!(
             kind,
@@ -50,23 +59,23 @@ impl Iteration<'_> {
                 ability.secondary_resource_cost
             };
             if !glacial_assault_free && self.hero.rime().winter_orbs < required {
-                return None;
+                return Err("resource:winter-orbs");
             }
         }
         if kind == DpsAbilityKind::WrathOfWinter && self.shared.spirit < ability.spirit_cost {
-            return None;
+            return Err("resource:spirit");
         }
         if kind == DpsAbilityKind::RagingTempest && self.shared.spirit < ability.spirit_cost {
-            return None;
+            return Err("resource:spirit");
         }
         if kind == DpsAbilityKind::EventHorizon && self.shared.spirit < ability.spirit_cost {
-            return None;
+            return Err("resource:spirit");
         }
         if kind == DpsAbilityKind::MatriarchMacabre && self.shared.spirit < ability.spirit_cost {
-            return None;
+            return Err("resource:spirit");
         }
         if kind == DpsAbilityKind::BloodboundSpirit && self.shared.spirit < ability.spirit_cost {
-            return None;
+            return Err("resource:spirit");
         }
         if matches!(
             kind,
@@ -79,7 +88,7 @@ impl Iteration<'_> {
         ) {
             let cost = ability_param(ability, parameter_key!("energyCost"));
             if self.hero.mara().energy + f64::EPSILON < cost {
-                return None;
+                return Err("resource:energy");
             }
             if matches!(
                 kind,
@@ -88,7 +97,7 @@ impl Iteration<'_> {
                     | DpsAbilityKind::QueensFang
             ) && self.hero.mara().combo_points == 0
             {
-                return None;
+                return Err("resource:combo-points");
             }
         }
         if matches!(
@@ -122,24 +131,24 @@ impl Iteration<'_> {
                     && self.hero.elarion().celestial_impetus_stacks > 0
                     && self.common.now_ms < self.hero.elarion().celestial_impetus_until);
             if !free && self.hero.elarion().focus + f64::EPSILON < cost {
-                return None;
+                return Err("resource:focus");
             }
         }
         if kind == DpsAbilityKind::ThunderCall
             && self.common.now_ms < self.hero.tariq().raging_tempest_until
         {
-            return None;
+            return Err("buff:raging-tempest-active");
         }
         if kind == DpsAbilityKind::TariqChainLightning
             && self.common.now_ms >= self.hero.tariq().thunder_call_until
         {
-            return None;
+            return Err("buff:thunder-call-required");
         }
         if kind == DpsAbilityKind::CullingStrike
             && !(self.common.now_ms < self.hero.tariq().executioners_grin_until
                 && self.hero.tariq().executioners_grin_stacks > 0)
         {
-            return None;
+            return Err("buff:executioners-grin-required");
         }
         if matches!(
             kind,
@@ -160,10 +169,10 @@ impl Iteration<'_> {
                 1.0
             };
             if self.hero.tariq().fury + f64::EPSILON < base_cost * cost_multiplier {
-                return None;
+                return Err("resource:fury");
             }
         }
-        Some(index)
+        Ok(index)
     }
 
     pub(crate) fn buff_stacks(&self, buff: AplBuff) -> u32 {
