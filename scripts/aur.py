@@ -12,6 +12,19 @@ REPOSITORY = "https://github.com/Crockery/fellersim"
 REMOTE = "ssh://aur@aur.archlinux.org/fellersim-bin.git"
 
 
+def validate_namcap(output):
+    # The package deliberately preserves upstream bytes, including symbols and
+    # the glibc loader dependency. Every other namcap warning/error is fatal.
+    allowed = {
+        "fellersim-bin W: ELF file ('usr/bin/fellersim') is unstripped.",
+        "fellersim-bin W: Unused shared library '/usr/lib/ld-linux-x86-64.so.2' by file ('usr/bin/fellersim')",
+        "fellersim-bin W: Unused shared library '/usr/lib64/ld-linux-x86-64.so.2' by file ('usr/bin/fellersim')",
+    }
+    issues = [line for line in output.splitlines() if re.search(r" [EW]: ", line) and line not in allowed]
+    if issues:
+        raise ValueError("Unexpected namcap diagnostics: " + "\n".join(issues))
+
+
 def version_tuple(version):
     if not re.fullmatch(r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)", version):
         raise ValueError("Expected a stable numeric version, e.g. 0.2.0")

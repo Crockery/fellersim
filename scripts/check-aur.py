@@ -60,13 +60,14 @@ for recipe in recipe upgrade; do
   if grep -E ' (E|W): ' /work/$recipe/recipe-lint.txt; then exit 1; fi
  done
 for package in /work/packages/*.pkg.tar.zst; do
-  namcap "$package" > /work/package-lint.txt
-  cat /work/package-lint.txt
-  if grep -E ' (E|W): ' /work/package-lint.txt; then exit 1; fi
+  namcap "$package" > "/work/$(basename "$package").lint"
+  cat "/work/$(basename "$package").lint"
  done
 readelf -d /work/recipe/src/fellersim > /work/dynamic.txt
 '''
         run('docker', 'run', '--rm', '-v', f'{work}:/work', IMAGE, 'bash', '-c', build)
+        for lint in work.glob('*.lint'):
+            aur.validate_namcap(lint.read_text())
         needed = [line.split('[', 1)[1].split(']', 1)[0] for line in (work / 'dynamic.txt').read_text().splitlines() if '(NEEDED)' in line]
         if set(needed) - {'libgcc_s.so.1', 'libm.so.6', 'libc.so.6', 'ld-linux-x86-64.so.2'}:
             raise ValueError(f'Undeclared runtime libraries: {needed}')
