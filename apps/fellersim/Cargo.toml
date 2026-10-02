@@ -10,6 +10,7 @@ publish = false
 fellersim-core = { path = "../../crates/fellersim" }
 fellersim-data = { path = "../../crates/fellersim-data" }
 clap.workspace = true
+serde.workspace = true
 serde_json.workspace = true
 tokio.workspace = true
 

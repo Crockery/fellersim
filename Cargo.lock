@@ -186,6 +186,7 @@ dependencies = [
  "clap",
  "fellersim-core",
  "fellersim-data",
+ "serde",
  "serde_json",
  "tempfile",
  "tokio",

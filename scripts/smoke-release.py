@@ -21,7 +21,7 @@ with tempfile.TemporaryDirectory() as directory:
     for hero in ["ardeos", "elarion", "gunde", "mara", "rime", "tariq"]:
         result = subprocess.run([
             binary, "run", "--character", root / f"examples/{hero}.json",
-            "--apl", root / f"examples/{hero}.apl", "--iterations", "100",
+            "--apl", root / f"default-apls/{hero}.apl", "--iterations", "100",
             "--seed", "0123456789abcdef", "--json",
         ], cwd=root, check=True, capture_output=True, text=True)
         value = json.loads(result.stdout)

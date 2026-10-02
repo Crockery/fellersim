@@ -123,7 +123,7 @@ pub(super) fn validate(build: &CharacterBuild) -> Result<(), SimulationError> {
             {
                 return Err(invalid("Invalid blessing selection."));
             }
-            *blessings.entry(&blessing.blessing_id).or_insert(0u32) += blessing.rank;
+            *blessings.entry(&blessing.blessing_id).or_insert(0u64) += u64::from(blessing.rank);
         }
         for (id, rank) in blessings {
             if rank as f64 > num(&data["blessings"][id], "maxRank") {
@@ -145,7 +145,8 @@ pub(super) fn validate(build: &CharacterBuild) -> Result<(), SimulationError> {
             let index = gem
                 .socket_id
                 .strip_prefix("socket:")
-                .and_then(|s| s.parse::<usize>().ok());
+                .and_then(|s| s.parse::<usize>().ok())
+                .filter(|index| gem.socket_id == format!("socket:{index}"));
             let tier = index
                 .and_then(|i| config["socketTiers"].get(i))
                 .and_then(Value::as_str)

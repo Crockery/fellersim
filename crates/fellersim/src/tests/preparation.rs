@@ -1,6 +1,89 @@
 use crate::preparation::*;
 use serde_json::Value;
 
+fn equipped_character(position: &str, item_id: &str) -> CharacterBuild {
+    let file: Value = serde_json::from_str(include_str!(
+        "../../../../apps/fellersim/examples/ardeos.json"
+    ))
+    .unwrap();
+    let mut build: CharacterBuild = serde_json::from_value(file["build"].clone()).unwrap();
+    build
+        .positions
+        .iter_mut()
+        .find(|p| p.position_id == position)
+        .unwrap()
+        .item = Some(CharacterItem {
+        item_id: item_id.into(),
+        item_level: 15,
+        rarity: "Epic".into(),
+        applied_tempers: 0,
+        rolled_modifiers: vec![],
+        gems: vec![],
+        trait_tree: None,
+        blessings: vec![],
+    });
+    build
+}
+
+#[test]
+fn rejects_duplicate_sockets_disguised_with_alternate_numeric_spellings() {
+    let mut build = equipped_character("wrists", "wrists-setc-b-expertise");
+    let gem = CharacterGem {
+        socket_id: "socket:0".into(),
+        gem_id: "ItemID.GemType.Amethyst.Tier1".into(),
+    };
+    build
+        .positions
+        .iter_mut()
+        .find_map(|p| p.item.as_mut())
+        .unwrap()
+        .gems = vec![gem.clone()];
+    assert!(prepare_character(&build, 1).is_ok());
+    for alias in ["socket:00", "socket:+0", "socket:0"] {
+        let item = build
+            .positions
+            .iter_mut()
+            .find_map(|p| p.item.as_mut())
+            .unwrap();
+        item.gems = vec![
+            gem.clone(),
+            CharacterGem {
+                socket_id: alias.into(),
+                ..gem.clone()
+            },
+        ];
+        assert!(prepare_character(&build, 1).is_err(), "{alias}");
+    }
+}
+
+#[test]
+fn rejects_blessing_rank_totals_that_exceed_u32_without_panicking() {
+    let mut build = equipped_character("chest", "chest-c-expertise");
+    let item = build
+        .positions
+        .iter_mut()
+        .find_map(|p| p.item.as_mut())
+        .unwrap();
+    item.blessings = vec![CharacterBlessing {
+        slot_id: "random:0:AbilityRank".into(),
+        blessing_id: "DynamicItemAbilityRank.01".into(),
+        rank: 1,
+    }];
+    assert!(prepare_character(&build, 1).is_ok());
+    let item = build
+        .positions
+        .iter_mut()
+        .find_map(|p| p.item.as_mut())
+        .unwrap();
+    item.blessings[0].rank = u32::MAX;
+    item.blessings.push(CharacterBlessing {
+        slot_id: "random:1:AbilityRank".into(),
+        blessing_id: "DynamicItemAbilityRank.01".into(),
+        rank: 2,
+    });
+    assert!(prepare_character(&build, 1).is_err());
+}
+
 #[test]
 fn apl_preserves_comments_disabled_actions_and_operator_precedence() {
     let apl = crate::parse_apl("# opening\r\n# ACTIONS=/infernal_wave,IF=!buff.wildfire.up|resource.spirit.current>=1e1&fight.remains<30 # note\r\nactions+=/fire_ball\r\n# tail").unwrap();
