@@ -27,6 +27,8 @@ class PackagingTests(unittest.TestCase):
     def test_generation(self):
         recipe = (self.recipe / 'PKGBUILD').read_text()
         self.assertNotIn('@VERSION@', recipe)
+        for name in ['PKGBUILD', '.SRCINFO']:
+            self.assertNotIn(b'\r', (self.recipe / name).read_bytes())
         self.assertIn('pkgver=0.2.0', recipe)
         self.assertIn("options=('!strip' '!debug')", recipe)
         self.assertEqual(aur.package_version((self.recipe / '.SRCINFO').read_text()), (0, 2, 0, 1))
