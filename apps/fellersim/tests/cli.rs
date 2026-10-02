@@ -133,7 +133,7 @@ fn rejects_invalid_character_files_with_file_context() {
             let response: Value = serde_json::from_slice(&output.stdout).unwrap();
             assert_eq!(response["ok"], false);
             let error = response["diagnostics"].to_string();
-            assert!(error.contains(path.to_str().unwrap()), "{error}");
+            assert_eq!(response["diagnostics"][0]["source"].as_str(), path.to_str());
             assert!(error.contains(expected), "{command}: {name}: {error}");
         }
     }
