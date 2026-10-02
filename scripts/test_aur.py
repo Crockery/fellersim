@@ -31,6 +31,13 @@ class PackagingTests(unittest.TestCase):
         self.assertIn("options=('!strip' '!debug')", recipe)
         self.assertEqual(aur.package_version((self.recipe / '.SRCINFO').read_text()), (0, 2, 0, 1))
 
+    def test_namcap_preservation_exceptions_are_narrow(self):
+        aur.validate_namcap("fellersim-bin W: ELF file ('usr/bin/fellersim') is unstripped.")
+        aur.validate_namcap("fellersim-bin W: Unused shared library '/usr/lib64/ld-linux-x86-64.so.2' by file ('usr/bin/fellersim')")
+        for message in ["fellersim-bin E: Dependency glibc missing", "fellersim-bin W: Dependency libgcc missing", "PKGBUILD W: Invalid architecture"]:
+            with self.assertRaisesRegex(ValueError, 'namcap'):
+                aur.validate_namcap(message)
+
     def test_bad_versions_and_revisions(self):
         for version in ['v0.2.0', '0.2.0-rc1', '0.2', '01.2.0', '$(id)', '../0.2.0']:
             with self.subTest(version=version), self.assertRaises(ValueError):

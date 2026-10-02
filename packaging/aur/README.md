@@ -60,7 +60,9 @@ Before a release exists, the same check accepts the local archive and checksum
 produced by `scripts/package-release.py linux-x86_64`. The archive is cached under
 its final filename; makepkg still verifies its pinned checksum. The package is
 built unprivileged in Arch and installed in a separate Arch runtime container.
-Checks cover dependencies, namcap, installed files, all six heroes, embedded and
+Namcap errors and warnings fail the check, except its exact notices about the
+preserved executable's symbols and glibc loader dependency; neither warrants
+rewriting the release binary. Checks cover dependencies, installed files, all six heroes, embedded and
 visible default APL parity, deterministic results, upgrade, and removal.
 
 The recipe requires no Rust toolchain. It installs the original executable
