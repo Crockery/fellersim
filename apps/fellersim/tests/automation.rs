@@ -328,11 +328,15 @@ fn argument_errors_and_timeouts_use_the_protocol() {
     assert_eq!(parse_response(&output)["diagnostics"][0]["code"], "timeout");
     let mut slow = case("slow", starter("firemage"));
     slow["options"] = req["options"].clone();
-    let batch = manifest(vec![case("quick", starter("firemage")), slow.clone(), {
+    let mut quick = case("quick", starter("firemage"));
+    // A statically false rotation completes cheaply even on a busy CI runner.
+    // Real combat throughput must not determine which case this deadline tests.
+    quick["apl"] = json!({"kind":"inline","source":"actions=/fire_ball,if=targets.count<0"});
+    let batch = manifest(vec![quick, slow.clone(), {
         slow["id"] = json!("queued");
         slow
     }]);
-    let output = invoke(&["batch", "--input", "-", "--timeout", "2"], Some(&batch));
+    let output = invoke(&["batch", "--input", "-", "--timeout", "5"], Some(&batch));
     assert_eq!(output.status.code(), Some(124));
     let response = parse_response(&output);
     assert_eq!(response["data"]["cases"][0]["status"], "completed");

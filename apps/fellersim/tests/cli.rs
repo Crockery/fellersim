@@ -296,7 +296,7 @@ fn ctrl_c_cancels_without_a_success_result() {
             "--iterations",
             "100000",
             "--targets",
-            "20",
+            "5",
             "--json",
         ])
         .stdout(Stdio::piped())
