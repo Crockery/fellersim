@@ -15,6 +15,7 @@ files += [(pathlib.Path(name), name) for name in ["README.md", "agent-guide.md",
 files += [(p, f"examples/{p.name}") for p in pathlib.Path("apps/fellersim/examples").iterdir() if p.is_file()]
 files += [(p, f"default-apls/{p.name}") for p in pathlib.Path("default-apls").iterdir() if p.is_file()]
 files += [(pathlib.Path("crates/fellersim-data/data/catalog.json"), "catalog.json")]
+files += [(pathlib.Path("packaging/aur/README.md"), "packaging/aur/README.md")]
 destination = pathlib.Path("release")
 destination.mkdir(exist_ok=True)
 name = f"fellersim-{version}-{platform}"
