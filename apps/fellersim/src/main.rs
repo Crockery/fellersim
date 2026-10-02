@@ -5,6 +5,7 @@ use fellersim_core::{
     },
     simulate_owned,
 };
+use serde::Deserialize;
 use std::{
     fs,
     io::{self, Write},
@@ -33,7 +34,10 @@ enum Command {
 }
 #[derive(Args)]
 struct Input {
-    #[arg(long)]
+    #[arg(
+        long,
+        help = "JSON build exported from the Fellership Character Planner"
+    )]
     character: PathBuf,
     #[arg(long)]
     apl: PathBuf,
@@ -48,6 +52,26 @@ struct Input {
     #[arg(long, help = "Write a structured JSON result to stdout")]
     json: bool,
 }
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CharacterFile {
+    format: String,
+    version: u32,
+    build: CharacterBuild,
+}
+
+fn read_character(path: &PathBuf) -> Result<CharacterBuild, String> {
+    let file: CharacterFile =
+        serde_json::from_str(&read(path)?).map_err(|e| format!("{}: {e}", path.display()))?;
+    if file.format != "fellership-character-planner" || file.version != 6 {
+        return Err(format!(
+            "{}: Expected a Fellership Character Planner export with format \"fellership-character-planner\" and version 6.",
+            path.display()
+        ));
+    }
+    Ok(file.build)
+}
+
 fn read(path: &PathBuf) -> Result<String, String> {
     let file = fs::File::open(path).map_err(|e| format!("{}: {e}", path.display()))?;
     let mut contents = String::new();
@@ -61,8 +85,7 @@ fn read(path: &PathBuf) -> Result<String, String> {
     Ok(contents)
 }
 fn request(input: &Input) -> Result<SimulationInput, String> {
-    let character: CharacterBuild = serde_json::from_str(&read(&input.character)?)
-        .map_err(|e| format!("{}: {e}", input.character.display()))?;
+    let character = read_character(&input.character)?;
     let mut options: SimulationOptions = match &input.config {
         Some(path) => {
             serde_json::from_str(&read(path)?).map_err(|e| format!("{}: {e}", path.display()))?

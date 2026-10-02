@@ -30,7 +30,7 @@ jobs:
         shell: bash
         run: |
           target/release/fellersim --version
-          target/release/fellersim run --character apps/fellersim/examples/ardeos.json --apl apps/fellersim/examples/ardeos.apl --iterations 100 --json > result.json
+          target/release/fellersim run --character apps/fellersim/examples/ardeos.json --apl default-apls/ardeos.apl --iterations 100 --json > result.json
           python -c "import json; r=json.load(open('result.json')); assert r['meanDps'] > 0 and r['iterations'] == 100"
       - run: python scripts/package-release.py ${{ matrix.platform }}
       - uses: actions/upload-artifact@v4

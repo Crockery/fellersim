@@ -6,9 +6,9 @@ extract it, and run the executable from a terminal. No game installation,
 Fellership account, Node.js, or network connection is needed.
 
 ```sh
-fellersim validate --character examples/ardeos.json --apl examples/ardeos.apl
-fellersim run --character examples/ardeos.json --apl examples/ardeos.apl --iterations 10000
-fellersim run --character examples/rime.json --apl examples/rime.apl --targets 5 --json > result.json
+fellersim validate --character examples/ardeos.json --apl default-apls/ardeos.apl
+fellersim run --character examples/ardeos.json --apl default-apls/ardeos.apl --iterations 10000
+fellersim run --character examples/rime.json --apl default-apls/rime.apl --targets 5 --json > result.json
 ```
 
 On Windows, use `./fellersim.exe` in PowerShell. On Linux, use `./fellersim`.
@@ -16,10 +16,35 @@ The examples start with unequipped characters; edit their JSON to describe
 your equipment and talents. Incomplete equipment is allowed and contributes
 only the selected stats and effects. Unknown or invalid selections are errors.
 
+## Default APLs
+
+The [default-apls](default-apls/) directory contains the action priorities used by
+Fellership's default hero rotations. Read a hero's file to see its ability order
+and conditions:
+
+- [Ardeos](default-apls/ardeos.apl)
+- [Rime](default-apls/rime.apl)
+- [Tariq](default-apls/tariq.apl)
+- [Elarion](default-apls/elarion.apl)
+- [Mara](default-apls/mara.apl)
+- [Gunde](default-apls/gunde.apl)
+
+These files are included in release archives. Pass one to `--apl`, or copy and edit
+it to try a different rotation. The CLI requires an explicit `--apl` path.
+
 ## Inputs and reproducibility
 
-Character files use schema version 6, the current Fellership character-build
-format. Each file contains `heroId`, `talentPoints`, `selectedTalentIds`, all
+In Fellership's Character Planner, select **Export build** and pass the downloaded
+JSON file directly to `--character`. Supply a separate `--apl` file for the same
+hero:
+
+```sh
+fellersim validate --character fellership-ardeos-character-build-v6.json --apl default-apls/ardeos.apl
+```
+
+Character files contain `format: "fellership-character-planner"`, `version: 6`,
+and a `build` object. The nested build uses `schemaVersion: 6` and contains
+`heroId`, `talentPoints`, `selectedTalentIds`, all
 14 equipment `positions`, and `disabledConditionalContributionIds`.
 An empty position has `item: null`. Equipped items specify `itemId`,
 `itemLevel`, `rarity`, `appliedTempers`, `rolledModifiers`, `gems`, `traitTree`,
@@ -30,7 +55,7 @@ The binary archive's `catalog.json` (at
 item IDs, configurations, talent IDs and costs, socket gems, blessing ranks,
 and mechanics. Each hero's `items` map links rarity configurations to the
 `configurations` map. Edit the selected IDs and values, not normalized damage
-coefficients. The Rust `CharacterBuild` type is the file contract.
+coefficients. The Rust `CharacterBuild` type describes the nested `build` object.
 
 APL files use the same language as Fellership's editor:
 
@@ -44,7 +69,7 @@ actions+=/infernal_wave
 Conditions support `&`, `|`, `!`, parentheses, and numeric comparisons
 (`=`, `!=`, `<`, `<=`, `>`, `>=`). Queries cover cooldowns, resources, buffs,
 damage-over-time effects, debuffs, selected talents, equipped legendaries,
-target health/count, and elapsed/remaining fight time. The six example APLs
+target health/count, and elapsed/remaining fight time. The six default APLs
 show supported queries. Prefix an action line with `#` to disable it.
 Arithmetic, functions, variables, and named action lists are not supported.
 

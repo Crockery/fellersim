@@ -13,6 +13,7 @@ binary = pathlib.Path(f"target/release/fellersim{suffix}")
 files = [(binary, binary.name)]
 files += [(pathlib.Path(name), name) for name in ["README.md", "LICENSE", "NOTICE"]]
 files += [(p, f"examples/{p.name}") for p in pathlib.Path("apps/fellersim/examples").iterdir() if p.is_file()]
+files += [(p, f"default-apls/{p.name}") for p in pathlib.Path("default-apls").iterdir() if p.is_file()]
 files += [(pathlib.Path("crates/fellersim-data/data/catalog.json"), "catalog.json")]
 destination = pathlib.Path("release")
 destination.mkdir(exist_ok=True)
