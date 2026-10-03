@@ -80,6 +80,9 @@ readelf -d /work/recipe/src/fellersim > /work/dynamic.txt
             return json.loads(execute('fellersim', *args, '--json', '--quiet', capture_output=True, text=True).stdout)
         try:
             run('docker', 'run', '-d', '--name', container, '-v', f'{work / "packages"}:/packages:ro', '-w', '/tmp', IMAGE, 'sleep', 'infinity', stdout=subprocess.DEVNULL)
+            # The minimal image excludes usr/share/doc by default. Install this
+            # package's docs so the check exercises actual files and links.
+            execute('sh', '-c', "printf '\\n[options]\\nNoExtract = !usr/share/doc/fellersim/*\\n' >> /etc/pacman.conf")
             execute('pacman', '-Syu', '--noconfirm')
             package_name = f'fellersim-bin-{version}-{revision}-x86_64.pkg.tar.zst'
             execute('pacman', '-U', '--noconfirm', f'/packages/{package_name}')
@@ -114,6 +117,7 @@ readelf -d /work/recipe/src/fellersim > /work/dynamic.txt
                 assert required in listing
             for page in PAGES:
                 assert f'/usr/share/doc/fellersim/docs/apl/{page}' in listing
+                execute('test', '-s', f'/usr/share/doc/fellersim/docs/apl/{page}')
             execute('test', '-f', '/usr/share/doc/fellersim/default-apls/ardeos.apl')
             execute('pacman', '-R', '--noconfirm', 'fellersim-bin')
             execute('sh', '-c', 'test ! -e /usr/bin/fellersim && test ! -e /usr/share/fellersim && test ! -e /usr/share/doc/fellersim && test ! -e /usr/share/licenses/fellersim-bin')
