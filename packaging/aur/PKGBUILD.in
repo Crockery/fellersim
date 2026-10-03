@@ -21,6 +21,10 @@ package() {
   install -m644 examples/*.json "$pkgdir/usr/share/fellersim/examples/"
   install -Dm644 README.md "$pkgdir/usr/share/doc/fellersim/README.md"
   install -Dm644 agent-guide.md "$pkgdir/usr/share/doc/fellersim/agent-guide.md"
+  install -dm755 "$pkgdir/usr/share/doc/fellersim/docs/apl"
+  install -m644 docs/apl/*.md "$pkgdir/usr/share/doc/fellersim/docs/apl/"
+  # Keep the guide's relative links to shipped rotations usable offline.
+  ln -s /usr/share/fellersim/default-apls "$pkgdir/usr/share/doc/fellersim/default-apls"
   install -Dm644 packaging/aur/README.md "$pkgdir/usr/share/doc/fellersim/packaging/aur/README.md"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/fellersim-bin/LICENSE"
   install -Dm644 NOTICE "$pkgdir/usr/share/licenses/fellersim-bin/NOTICE"

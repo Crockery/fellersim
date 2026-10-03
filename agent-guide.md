@@ -5,6 +5,11 @@ limits, and exit codes come from the executable you will run.
 `fellersim version --json` identifies its bundled game and model versions.
 All commands work offline.
 
+For APL authoring, start with [Writing an APL](docs/apl/Home.md). It includes a
+short checklist, the complete query reference, and tested examples in plain
+language. The [public wiki](https://github.com/Crockery/fellersim/wiki) publishes
+the same guide; use the copy shipped with your executable for release-specific help.
+
 ## Discover, construct, and repair
 
 ```sh

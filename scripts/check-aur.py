@@ -10,6 +10,7 @@ import tempfile
 import uuid
 
 import aur
+from apl_docs import PAGES
 
 IMAGE = 'archlinux:base'
 HEROES = [('ardeos', 'firemage'), ('elarion', 'bowguy'), ('gunde', 'gunde'), ('mara', 'mara'), ('rime', 'rime'), ('tariq', 'ink')]
@@ -28,6 +29,7 @@ def check(archive, version, revision, template, output):
         required = {'fellersim', 'catalog.json', 'README.md', 'agent-guide.md', 'LICENSE', 'NOTICE', 'examples/request.json', 'examples/variants.json', 'packaging/aur/README.md'}
         required.update(f'default-apls/{hero}.apl' for hero, _ in HEROES)
         required.update(f'examples/{hero}.json' for hero, _ in HEROES)
+        required.update(f'docs/apl/{name}' for name in PAGES)
         if not required <= names or len(names) != len(members):
             raise ValueError('Release is missing required files or has duplicate archive paths')
         if any(not m.isfile() or pathlib.PurePosixPath(m.name).is_absolute() or '..' in pathlib.PurePosixPath(m.name).parts for m in members):
@@ -110,6 +112,9 @@ readelf -d /work/recipe/src/fellersim > /work/dynamic.txt
             assert all(p.startswith(('/usr/bin/', '/usr/share/')) or p == '/usr/' for p in listing)
             for required in ['/usr/share/fellersim/catalog.json', '/usr/share/doc/fellersim/agent-guide.md', '/usr/share/licenses/fellersim-bin/LICENSE', '/usr/share/licenses/fellersim-bin/NOTICE']:
                 assert required in listing
+            for page in PAGES:
+                assert f'/usr/share/doc/fellersim/docs/apl/{page}' in listing
+            execute('test', '-f', '/usr/share/doc/fellersim/default-apls/ardeos.apl')
             execute('pacman', '-R', '--noconfirm', 'fellersim-bin')
             execute('sh', '-c', 'test ! -e /usr/bin/fellersim && test ! -e /usr/share/fellersim && test ! -e /usr/share/doc/fellersim && test ! -e /usr/share/licenses/fellersim-bin')
         finally:

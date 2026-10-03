@@ -83,21 +83,11 @@ and mechanics. Each hero's `items` map links rarity configurations to the
 `configurations` map. Edit the selected IDs and values, not normalized damage
 coefficients. The Rust `CharacterBuild` type describes the nested `build` object.
 
-APL files use the same language as Fellership's editor:
-
-```text
-# First matching action wins.
-actions=/detonate,if=resource.embers.current=resource.embers.max
-actions+=/searing_blaze,if=dot.searing_blaze.remains<3
-actions+=/infernal_wave
-```
-
-Conditions support `&`, `|`, `!`, parentheses, and numeric comparisons
-(`=`, `!=`, `<`, `<=`, `>`, `>=`). Queries cover cooldowns, resources, buffs,
-damage-over-time effects, debuffs, selected talents, equipped legendaries,
-target health/count, and elapsed/remaining fight time. The six default APLs
-show supported queries. Prefix an action line with `#` to disable it.
-Arithmetic, functions, variables, and named action lists are not supported.
+An APL is a list of actions the simulator checks in order. Read
+[Writing an APL](docs/apl/Home.md) for a step-by-step introduction, the complete
+language reference, and examples. The guide is included with downloads and is
+also available on the [public wiki](https://github.com/Crockery/fellersim/wiki).
+APL files use the same language as Fellership's editor.
 
 `--config simulation.json` accepts `iterations`, `targets`, and `seed`.
 Explicit flags override the file. Defaults are 10,000 iterations, one target,

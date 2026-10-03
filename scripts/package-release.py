@@ -5,12 +5,15 @@ import sys
 import tarfile
 import tomllib
 import zipfile
+from apl_docs import PAGES, check_pages
 
 platform = sys.argv[1]
 version = tomllib.loads(pathlib.Path("Cargo.toml").read_text())["workspace"]["package"]["version"]
 suffix = ".exe" if platform.startswith("windows") else ""
 binary = pathlib.Path(f"target/release/fellersim{suffix}")
 files = [(binary, binary.name)]
+check_pages(pathlib.Path.cwd())
+files += [(pathlib.Path('docs/apl') / name, f'docs/apl/{name}') for name in PAGES]
 files += [(pathlib.Path(name), name) for name in ["README.md", "agent-guide.md", "LICENSE", "NOTICE"]]
 files += [(p, f"examples/{p.name}") for p in pathlib.Path("apps/fellersim/examples").iterdir() if p.is_file()]
 files += [(p, f"default-apls/{p.name}") for p in pathlib.Path("default-apls").iterdir() if p.is_file()]

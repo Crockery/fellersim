@@ -5,6 +5,7 @@ import pathlib
 import shutil
 import subprocess
 import tempfile
+from apl_docs import check_pages
 
 release = pathlib.Path("release")
 checksums = list(release.glob("*.sha256"))
@@ -15,6 +16,7 @@ assert hashlib.sha256(archive.read_bytes()).hexdigest() == digest
 with tempfile.TemporaryDirectory() as directory:
     root = pathlib.Path(directory)
     shutil.unpack_archive(archive, root)
+    check_pages(root)
     (root / "catalog.json").unlink()  # The executable must contain all runtime data.
     binary = root / ("fellersim.exe" if name.endswith(".zip") else "fellersim")
     subprocess.run([binary, "--version"], check=True)
