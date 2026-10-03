@@ -5,22 +5,23 @@ on:
     tags: ['v*']
   pull_request:
   workflow_dispatch:
-    inputs:
-      aur_tag:
-        description: 'Retry AUR publication for an existing stable release (empty runs normal checks)'
-        type: string
-        default: ''
-      pkgrel:
-        description: 'AUR package revision'
-        type: string
-        default: '1'
+    # inputs:
+    #   aur_tag:
+    #     description: 'Retry AUR publication for an existing stable release (empty runs normal checks)'
+    #     type: string
+    #     default: ''
+    #   pkgrel:
+    #     description: 'AUR package revision'
+    #     type: string
+    #     default: '1'
 
 permissions:
   contents: read
 
 jobs:
   build:
-    if: github.event_name != 'workflow_dispatch' || inputs.aur_tag == ''
+    # Restore this filter with the AUR dispatch inputs and publication job.
+    # if: github.event_name != 'workflow_dispatch' || inputs.aur_tag == ''
     strategy:
       matrix:
         include:
@@ -109,43 +110,45 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "$GITHUB_REF_NAME" release/* --verify-tag --title "Fellersim $GITHUB_REF_NAME" --generate-notes
-  aur-publish:
-    if: >-
-      always() &&
-      ((needs.publish.result == 'success' && startsWith(github.ref, 'refs/tags/v')) ||
-       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.aur_tag != ''))
-    needs: publish
-    runs-on: ubuntu-24.04
-    timeout-minutes: 25
-    concurrency:
-      group: fellersim-aur-publication
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: main
-      - name: Download public release and test final recipe
-        env:
-          RELEASE_TAG: ${{ inputs.aur_tag || github.ref_name }}
-          PACKAGE_REVISION: ${{ inputs.pkgrel || '1' }}
-        run: |
-          python scripts/aur.py download --tag "$RELEASE_TAG" --output release
-          version="${RELEASE_TAG#v}"
-          python scripts/check-aur.py --archive "release/fellersim-$version-linux-x86_64.tar.gz" --version "$version" --pkgrel "$PACKAGE_REVISION" --template packaging/aur/PKGBUILD.in --output aur-package
-      - uses: actions/upload-artifact@v4
-        with:
-          name: aur-submission
-          path: aur-package/
-          include-hidden-files: true
-          if-no-files-found: error
-      - name: Publish tested recipe to AUR
-        env:
-          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-        run: |
-          test -n "$AUR_SSH_PRIVATE_KEY"
-          key="$RUNNER_TEMP/fellersim-aur-key"
-          trap 'rm -f "$key"' EXIT
-          umask 077
-          printf '%s\n' "$AUR_SSH_PRIVATE_KEY" > "$key"
-          export GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$GITHUB_WORKSPACE/packaging/aur/known_hosts"
-          python scripts/aur.py publish --recipe aur-package
+  # AUR publication is paused pending account registration and SSH-key setup.
+  # Restore this job, dispatch inputs, and build filter together when ready.
+  # aur-publish:
+  #   if: >-
+  #     always() &&
+  #     ((needs.publish.result == 'success' && startsWith(github.ref, 'refs/tags/v')) ||
+  #      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.aur_tag != ''))
+  #   needs: publish
+  #   runs-on: ubuntu-24.04
+  #   timeout-minutes: 25
+  #   concurrency:
+  #     group: fellersim-aur-publication
+  #     cancel-in-progress: false
+  #   steps:
+  #     - uses: actions/checkout@v7
+  #       with:
+  #         ref: main
+  #     - name: Download public release and test final recipe
+  #       env:
+  #         RELEASE_TAG: ${{ inputs.aur_tag || github.ref_name }}
+  #         PACKAGE_REVISION: ${{ inputs.pkgrel || '1' }}
+  #       run: |
+  #         python scripts/aur.py download --tag "$RELEASE_TAG" --output release
+  #         version="${RELEASE_TAG#v}"
+  #         python scripts/check-aur.py --archive "release/fellersim-$version-linux-x86_64.tar.gz" --version "$version" --pkgrel "$PACKAGE_REVISION" --template packaging/aur/PKGBUILD.in --output aur-package
+  #     - uses: actions/upload-artifact@v4
+  #       with:
+  #         name: aur-submission
+  #         path: aur-package/
+  #         include-hidden-files: true
+  #         if-no-files-found: error
+  #     - name: Publish tested recipe to AUR
+  #       env:
+  #         AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+  #       run: |
+  #         test -n "$AUR_SSH_PRIVATE_KEY"
+  #         key="$RUNNER_TEMP/fellersim-aur-key"
+  #         trap 'rm -f "$key"' EXIT
+  #         umask 077
+  #         printf '%s\n' "$AUR_SSH_PRIVATE_KEY" > "$key"
+  #         export GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$GITHUB_WORKSPACE/packaging/aur/known_hosts"
+  #         python scripts/aur.py publish --recipe aur-package
