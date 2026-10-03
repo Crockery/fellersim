@@ -5,6 +5,12 @@ export includes them in Fellersim; release automation generates `PKGBUILD` and
 `.SRCINFO` for the separate [AUR repository](https://aur.archlinux.org/packages/fellersim-bin).
 Do not edit generated recipes in AUR without bringing the change into the template.
 
+AUR publication is temporarily paused pending account registration and SSH-key
+setup. Arch package checks and GitHub releases remain active. To resume, uncomment
+the `aur-publish` job, `workflow_dispatch` inputs, and `build` job filter together
+in the release workflow source, update its publication-policy test, and export
+the changes. The release and retry instructions below apply after re-enabling it.
+
 ## Account setup
 
 Create an account at <https://aur.archlinux.org/register> and register a dedicated
