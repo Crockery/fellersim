@@ -87,13 +87,13 @@ class DocumentationTests(unittest.TestCase):
         self.assertIn(f'/blob/{self.revision}/agent-guide.md', self.pages['Home.md'])
         self.assertIn('/wiki/APL-Checking-combat-state#finding-valid-names', self.pages['APL-Language-reference.md'])
         for name in ['README.md', 'agent-guide.md']:
-            self.assertIn('(docs/apl/Home.md)', (PUBLIC / name).read_text())
+            self.assertIn('(docs/apl/Home.md)', (PUBLIC / name).read_text(encoding='utf-8'))
 
     def test_broken_page_and_heading_links_fail(self):
         page = self.source / 'docs/apl/Home.md'
-        original = page.read_text()
+        original = page.read_text(encoding='utf-8')
         for link in ['Missing.md', 'Language-reference.md#missing', '../../../../outside.md']:
-            page.write_text(original + f'\n[Broken]({link})\n')
+            page.write_text(original + f'\n[Broken]({link})\n', encoding='utf-8')
             with self.subTest(link=link), self.assertRaises(ValueError):
                 apl_docs.check_pages(self.source)
 
