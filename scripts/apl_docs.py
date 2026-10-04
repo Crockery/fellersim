@@ -4,14 +4,15 @@ import re
 from urllib.parse import unquote, urlsplit
 
 PUBLIC_URL = 'https://github.com/Crockery/fellersim'
-PAGES = {
-    'Home.md': 'Home',
-    'Getting-started.md': 'APL-Getting-started',
-    'Language-reference.md': 'APL-Language-reference',
-    'Checking-combat-state.md': 'APL-Checking-combat-state',
-    'Why-actions-run.md': 'APL-Why-actions-run',
-    'Examples-and-common-mistakes.md': 'APL-Examples-and-common-mistakes',
-}
+PAGES = (
+    'Home.md',
+    'Getting-started.md',
+    'Language-reference.md',
+    'Checking-combat-state.md',
+    'Why-actions-run.md',
+    'Examples-and-common-mistakes.md',
+)
+PUBLICATION_NOTICE = 'Published from the source documentation. Make lasting edits there.'
 LINK = re.compile(r'\[([^\]\n]+)\]\(([^\s)]+)\)')
 
 
@@ -62,13 +63,22 @@ def render(root, revision, version):
     root = pathlib.Path(root).resolve()
     check_pages(root)
     docs = root / 'docs/apl'
+    home = (docs / 'Home.md').read_text(encoding='utf-8')
+    section = re.search(r'^## Where to start\n(.*?)(?=^## |\Z)', home, re.M | re.S)
+    order = re.findall(r'^\d+\. \[[^\]\n]+\]\(([^\s)]+)\)', section[1], re.M) if section else []
+    if len(order) != len(PAGES) - 1 or set(order) != set(PAGES) - {'Home.md'}:
+        raise ValueError('Home "Where to start" must list every other APL page exactly once')
+    # GitHub's Pages index sorts page names; number them using Home's reading order.
+    slugs = {'Home.md': 'Home'}
+    slugs.update({name: f'APL-{index:02d}-{pathlib.Path(name).stem}'
+                  for index, name in enumerate(order, 1)})
     titles = {name: (docs / name).read_text(encoding='utf-8').splitlines()[0][2:] for name in PAGES}
-    navigation = ' · '.join(f'[{titles[name]}]({PUBLIC_URL}/wiki/{slug})' for name, slug in PAGES.items())
+    navigation = ' · '.join(f'[{titles[name]}]({PUBLIC_URL}/wiki/{slug})' for name, slug in slugs.items())
     footer = (f'\n---\n\nFellersim {version} · '
               f'[Public source revision {revision[:12]}]({PUBLIC_URL}/commit/{revision})\n\n'
-              'Published from the source documentation. Make lasting edits there.\n')
+              f'{PUBLICATION_NOTICE}\n')
     rendered = {}
-    for name, slug in PAGES.items():
+    for name, slug in slugs.items():
         page = docs / name
         text = page.read_text(encoding='utf-8')
         # Example expectations are test inputs, not part of the reader's guide.
@@ -80,7 +90,7 @@ def render(root, revision, version):
                 return match[0]
             target, anchor = destination
             if target.parent == docs and target.name in PAGES:
-                href = f'{PUBLIC_URL}/wiki/{PAGES[target.name]}'
+                href = f'{PUBLIC_URL}/wiki/{slugs[target.name]}'
             else:
                 kind = 'tree' if target.is_dir() else 'blob'
                 href = f'{PUBLIC_URL}/{kind}/{revision}/{target.relative_to(root).as_posix()}'
