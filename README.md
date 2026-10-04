@@ -16,31 +16,6 @@ The examples start with unequipped characters; edit their JSON to describe
 your equipment and talents. Incomplete equipment is allowed and contributes
 only the selected stats and effects. Unknown or invalid selections are errors.
 
-## Arch Linux and CachyOS
-
-Install [`fellersim-bin`](https://aur.archlinux.org/packages/fellersim-bin) using
-an AUR helper, or build the recipe with makepkg:
-
-```sh
-git clone https://aur.archlinux.org/fellersim-bin.git
-cd fellersim-bin
-makepkg -si
-fellersim version --json
-```
-
-The package installs the published Linux x86-64 executable. No Rust toolchain is
-required. Default APLs, examples, and the catalog are in `/usr/share/fellersim`;
-documentation is in `/usr/share/doc/fellersim`. Copy files into your working
-directory before editing them. For example:
-
-```sh
-cp /usr/share/fellersim/examples/ardeos.json ./character.json
-fellersim run --character character.json --default-apl --json
-```
-
-Package maintenance and release retries are documented in the
-[AUR maintenance guide](packaging/aur/README.md).
-
 ## Default APLs
 
 The [default-apls](default-apls/) directory contains the action priorities used by

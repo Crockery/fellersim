@@ -74,20 +74,50 @@ class DocumentationTests(unittest.TestCase):
 
     def test_source_links_and_rendered_navigation(self):
         apl_docs.check_pages(PUBLIC, DOCS)
-        self.assertEqual(set(self.pages), {f'{slug}.md' for slug in apl_docs.PAGES.values()})
+        self.assertEqual(set(self.pages), {
+            'Home.md', 'APL-01-Getting-started.md', 'APL-02-Language-reference.md',
+            'APL-03-Checking-combat-state.md', 'APL-04-Why-actions-run.md',
+            'APL-05-Examples-and-common-mistakes.md',
+        })
         for content in self.pages.values():
             self.assertIn(f'/commit/{self.revision}', content)
             self.assertIn('Fellersim 0.2.0', content)
-            self.assertIn('/wiki/APL-Language-reference', content)
+            self.assertIn('/wiki/APL-02-Language-reference', content)
             self.assertNotIn('<!-- apl-test', content)
             self.assertNotIn('fellowscript', content)
             for match in apl_docs.LINK.finditer(content):
                 self.assertTrue(match[2].startswith('https://'), match[2])
         self.assertIn(f'/tree/{self.revision}/default-apls', self.pages['Home.md'])
         self.assertIn(f'/blob/{self.revision}/agent-guide.md', self.pages['Home.md'])
-        self.assertIn('/wiki/APL-Checking-combat-state#finding-valid-names', self.pages['APL-Language-reference.md'])
+        self.assertIn('/wiki/APL-03-Checking-combat-state#finding-valid-names', self.pages['APL-02-Language-reference.md'])
         for name in ['README.md', 'agent-guide.md']:
             self.assertIn('(docs/apl/Home.md)', (PUBLIC / name).read_text(encoding='utf-8'))
+
+    def test_wiki_index_and_navigation_follow_home_reading_order(self):
+        home = self.source / 'docs/apl/Home.md'
+        text = home.read_text(encoding='utf-8')
+        text = text.replace('](Language-reference.md)', '](SWAP.md)')
+        text = text.replace('](Checking-combat-state.md)', '](Language-reference.md)')
+        home.write_text(text.replace('](SWAP.md)', '](Checking-combat-state.md)'), encoding='utf-8')
+        pages = apl_docs.render(self.source, self.revision, '0.2.0')
+        self.assertEqual(sorted(name for name in pages if name != 'Home.md'), [
+            'APL-01-Getting-started.md', 'APL-02-Checking-combat-state.md',
+            'APL-03-Language-reference.md', 'APL-04-Why-actions-run.md',
+            'APL-05-Examples-and-common-mistakes.md',
+        ])
+        navigation = pages['Home.md'].splitlines()[2]
+        links = [match[2].rsplit('/', 1)[-1] for match in apl_docs.LINK.finditer(navigation)]
+        self.assertEqual(links, ['Home'] + sorted(pathlib.Path(name).stem for name in pages if name != 'Home.md'))
+        self.assertIn('/wiki/APL-02-Checking-combat-state#finding-valid-names', pages['APL-03-Language-reference.md'])
+
+    def test_incomplete_or_duplicate_home_reading_order_fails(self):
+        home = self.source / 'docs/apl/Home.md'
+        original = home.read_text(encoding='utf-8')
+        for text in [original.replace('2. [Language reference]', '[Language reference]'),
+                     original.replace('](Language-reference.md)', '](Checking-combat-state.md)')]:
+            home.write_text(text, encoding='utf-8')
+            with self.assertRaisesRegex(ValueError, 'exactly once'):
+                apl_docs.render(self.source, self.revision, '0.2.0')
 
     def test_broken_page_and_heading_links_fail(self):
         page = self.source / 'docs/apl/Home.md'
@@ -155,6 +185,23 @@ class DocumentationTests(unittest.TestCase):
         subprocess.run(['git', 'init', '--bare', remote], check=True, capture_output=True)
         with self.assertRaisesRegex(ValueError, 'first Home page'):
             self.publish(remote)
+
+    def test_publish_removes_obsolete_generated_names_only(self):
+        remote = self.remote()
+        previous = {'Home.md': self.pages['Home.md']}
+        for name, content in self.pages.items():
+            if name != 'Home.md':
+                previous['APL-' + name.split('-', 2)[2]] = content
+        previous['APL-Notes.md'] = '# Personal notes\nKeep this page.\n'
+        self.publish(remote, pages=previous)
+        before = git(remote, 'rev-parse', 'HEAD')
+        self.assertTrue(self.publish(remote, False))
+        self.assertEqual(before, git(remote, 'rev-parse', 'HEAD'))
+        self.assertTrue(self.publish(remote))
+        self.assertEqual(set(git(remote, 'ls-tree', '--name-only', 'HEAD').splitlines()),
+                         set(self.pages) | {'Unrelated.md', 'APL-Notes.md'})
+        self.assertEqual(git(remote, 'show', 'HEAD:APL-Notes.md'), '# Personal notes\nKeep this page.')
+        self.assertFalse(self.publish(remote))
 
     def test_concurrent_update_rejects_push_without_retry(self):
         remote = self.remote()

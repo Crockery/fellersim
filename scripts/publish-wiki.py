@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 import tomllib
 
-from apl_docs import PUBLIC_URL, render
+from apl_docs import PUBLIC_URL, PUBLICATION_NOTICE, render
 
 WIKI_REMOTE = 'git@github.com:Crockery/fellersim.wiki.git'
 PUBLIC_REMOTES = {f'{PUBLIC_URL}.git', PUBLIC_URL, 'git@github.com:Crockery/fellersim.git',
@@ -42,7 +42,7 @@ def verify_source(root):
 
 
 def sync_pages(pages, revision, remote, publish):
-    """Touch only the declared page names; leave all other wiki files alone."""
+    """Update rendered pages and remove obsolete generated APL pages."""
     with tempfile.TemporaryDirectory(prefix='fellersim-wiki-') as temporary:
         checkout = pathlib.Path(temporary)
         result = subprocess.run(['git', 'clone', '-c', 'core.autocrlf=false', '--', remote, temporary],
@@ -53,6 +53,15 @@ def sync_pages(pages, revision, remote, publish):
         if subprocess.run(['git', '-C', temporary, 'rev-parse', '--verify', 'HEAD'],
                           capture_output=True).returncode:
             raise ValueError(f'Wiki is uninitialized. Create its first Home page at {PUBLIC_URL}/wiki, then retry.')
+        obsolete = []
+        for target in sorted(checkout.glob('APL-*.md')):
+            if target.name in pages or target.is_symlink() or not target.is_file():
+                continue
+            old = target.read_text(encoding='utf-8')
+            if old.rstrip().endswith(PUBLICATION_NOTICE) and f']({PUBLIC_URL}/commit/' in old:
+                obsolete.append(target.name)
+                print(''.join(difflib.unified_diff(old.splitlines(True), [],
+                                                 fromfile=f'wiki/{target.name}', tofile='/dev/null')), end='')
         changed = []
         for name, text in pages.items():
             if pathlib.PurePath(name).name != name or not name.endswith('.md'):
@@ -68,17 +77,22 @@ def sync_pages(pages, revision, remote, publish):
             changed.append(name)
             if publish:
                 target.write_text(text, encoding='utf-8', newline='\n')
-        if not changed:
+        if not changed and not obsolete:
             print('Wiki already matches the source documentation.')
             return False
         if not publish:
-            print(f'Preview only: {len(changed)} pages would change. Use --publish after review.')
+            print(f'Preview only: {len(changed)} pages would change; {len(obsolete)} obsolete generated pages '
+                  'would be removed. Use --publish after review.')
             return True
-        git(checkout, 'add', '--', *changed)
+        if obsolete:
+            git(checkout, 'rm', '--', *obsolete)
+        if changed:
+            git(checkout, 'add', '--', *changed)
         git(checkout, 'commit', '-m', f'Document APLs from fellersim {revision[:12]}')
         # No force, retry, or rebase: concurrent edits must be reviewed.
         git(checkout, 'push', 'origin', 'HEAD')
-        print(f'Published {len(changed)} pages to {PUBLIC_URL}/wiki.')
+        print(f'Published {len(changed)} pages and removed {len(obsolete)} obsolete generated pages '
+              f'at {PUBLIC_URL}/wiki.')
         return True
 
 
