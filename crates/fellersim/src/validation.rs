@@ -1625,7 +1625,13 @@ fn is_known_hero_source_mechanic(mechanic: &DynamicMechanicInstance) -> bool {
         || source_id.starts_with("legendary-")
         || matches!(
             source_id,
-            "seta-proc-intellect" | "setb-proc-hdt" | "setd-proc-intellect"
+            "seta-proc-intellect"
+                | "seta-proc-strength"
+                | "seta-proc-agility"
+                | "setb-proc-hdt"
+                | "setd-proc-intellect"
+                | "setd-proc-strength"
+                | "setd-proc-agility"
         )
     {
         return true;

@@ -11,7 +11,8 @@ actions+=/weapon_cleave_charge
 actions+=/weapon_instant_aoe
 actions+=/weapon_frontal_cone
 
-actions+=/matriarch_macabre,if=resource.spirit.current=resource.spirit.max
+# Spend the equipped Spirit cost without replacing an active Matriarch.
+actions+=/matriarch_macabre,if=!buff.matriarch_macabre.up
 actions+=/maiden_of_death
 # In cleave, cast Maiden first so its bleed application benefits Hemorrhaging Strike.
 actions+=/hemorrhaging_strike,if=targets.count>=3&!dot.hemorrhaging_strike.up&resource.combo_points.current>=4
@@ -29,6 +30,9 @@ actions+=/brooding_shadows,if=!buff.brooding_shadows.up&targets.count>=4&resourc
 actions+=/skittering_blades,if=targets.count>=4&buff.brooding_shadows.up
 actions+=/brooding_shadows,if=!buff.brooding_shadows.up&targets.count<4&resource.combo_points.current=0&resource.energy.current>=20
 actions+=/backstab,if=targets.count<4&buff.brooding_shadows.up
+# Consume Malevolence with the opposite finisher before the target-count default.
+actions+=/arachnid_assault,if=targets.count<3&buff.malevolence_arachnid.up&resource.combo_points.current>=5
+actions+=/queens_fang,if=targets.count>=3&buff.malevolence_queen.up&resource.combo_points.current>=4
 actions+=/arachnid_assault,if=targets.count>=3&resource.combo_points.current>=4
 actions+=/queens_fang,if=targets.count<3&resource.combo_points.current>=5
 

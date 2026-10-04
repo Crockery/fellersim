@@ -72,7 +72,7 @@ fn tariq_raging_tempest_spends_spirit_starts_heroism_and_builds_expertise() {
     // The initial Expertise stack affects impact; each pulse captures before adding its stack.
     let damage_spirit: f64 = [101.0, 51.0, 51.0]
         .into_iter()
-        .map(|damage| f64::from((damage / 1337.0_f64 * 0.75) as f32))
+        .map(|damage| f64::from((damage / 6_637_912.0_f64 * 11.25) as f32))
         .sum();
     assert_eq!(iteration.shared.spirit, damage_spirit);
     assert_eq!(iteration.shared.heroism_until, 5_000);
@@ -101,7 +101,7 @@ fn pneuma_grants_starting_spirit_and_spirit_on_culling_strike_commit() {
     // Pneuma grants one on commit; the 140-damage strike grants ordinary Spirit too.
     assert_eq!(
         iteration.shared.spirit,
-        51.0 + f64::from((140.0_f64 / 1337.0 * 0.75) as f32)
+        51.0 + f64::from((140.0_f64 / 6_637_912.0 * 11.25) as f32)
     );
 }
 
@@ -1166,4 +1166,44 @@ fn tariq_skull_lightning_keeps_them_bones_and_sledgehammer_copies_only_physical_
     assert_eq!(total.hits, 4);
     assert_eq!(total.crits, 2);
     assert_eq!(total.damage - before_cleave, physical_damage);
+}
+
+#[test]
+fn default_tariq_spends_actual_spirit_cost_between_lightning_windows() {
+    let document: serde_json::Value =
+        serde_json::from_str(include_str!("../fixtures/apl-builds/tariq/character.json")).unwrap();
+    let mut build: crate::preparation::CharacterBuild =
+        serde_json::from_value(document["build"].clone()).unwrap();
+    // Unequipped weapon rules must not prevent Spirit spending.
+    build
+        .positions
+        .iter_mut()
+        .find(|p| p.position_id == "weapon")
+        .unwrap()
+        .item = None;
+    let (profile, _) = crate::preparation::prepare_character(&build, 1).unwrap();
+    let apl = crate::parse_apl(&shipped_apl_source("tariq")).unwrap();
+    for cost in [85.0, 100.0] {
+        let mut profile = profile.clone();
+        profile
+            .abilities
+            .iter_mut()
+            .find(|a| a.kind == DpsAbilityKind::RagingTempest)
+            .unwrap()
+            .spirit_cost = cost;
+        let mut iteration = Iteration::new(&profile, &apl, 1, 61);
+        let tempest = iteration.common.abilities_by_kind[&DpsAbilityKind::RagingTempest];
+        let thunder = iteration.common.abilities_by_kind[&DpsAbilityKind::ThunderCall];
+        iteration.shared.spirit = cost - 0.01;
+        assert_eq!(iteration.choose_action(), Some(thunder));
+        iteration.shared.spirit = cost;
+        assert!(cost < profile.max_spirit);
+        assert_eq!(iteration.choose_action(), Some(tempest));
+        iteration.hero.tariq_mut().thunder_call_until = 1_000;
+        assert_ne!(iteration.choose_action(), Some(tempest));
+        iteration.hero.tariq_mut().raging_tempest_until = 1_000;
+        assert_ne!(iteration.choose_action(), Some(tempest));
+        iteration.common.now_ms = 1_000;
+        assert_eq!(iteration.choose_action(), Some(tempest));
+    }
 }

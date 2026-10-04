@@ -2,14 +2,15 @@
 actions=/owed_in_blood,if=resource.blood_feathers.current>0&fight.remains<5
 actions+=/slaughter,if=debuff.rend.up&fight.remains<4
 
-# Prepare the burst window: Rupture leads in cleave, while Blood Arc leads at low target counts.
-actions+=/rupture,if=(targets.count>=3|talent.gunde-talent-id-talent13.enabled)&resource.spirit.current=resource.spirit.max&cooldown.reign_in_blood.ready&cooldown.blood_arc.ready
-actions+=/blood_arc,if=resource.spirit.current=resource.spirit.max&cooldown.reign_in_blood.ready&(targets.count<3|buff.open_wounds.up)
-actions+=/bloodbound_spirit,if=resource.spirit.current=resource.spirit.max&cooldown.reign_in_blood.ready&buff.serrated_edge.up&((legendary.wrists_a_criticalstrike.equipped&talent.gunde-talent-id-talent13.enabled&buff.deaths_arc.up&buff.harvesters_toll.up)|!legendary.wrists_a_criticalstrike.equipped|!talent.gunde-talent-id-talent13.enabled)
+# Prepare Serrated Edge with Rupture in cleave and Blood Arc at low target counts.
+actions+=/rupture,if=(targets.count>=3|talent.gunde-talent-id-talent13.enabled)&!buff.bloodbound_spirit.up&cooldown.blood_arc.ready
+actions+=/blood_arc,if=!buff.bloodbound_spirit.up&(targets.count<3|buff.open_wounds.up)
+actions+=/bloodbound_spirit,if=!buff.bloodbound_spirit.up&buff.serrated_edge.up&((legendary.wrists_a_criticalstrike.equipped&talent.gunde-talent-id-talent13.enabled&(!talent.gunde-talent-id-talent1.enabled|buff.deaths_arc.up)&(!talent.gunde-talent-id-talent4.enabled|buff.harvesters_toll.up))|!legendary.wrists_a_criticalstrike.equipped|!talent.gunde-talent-id-talent13.enabled)
 
-# Bloodcraze spends feathers before Reign in Blood. Carrion Onslaught waits for Death's Arc inside Harvester's Toll.
-actions+=/owed_in_blood,if=talent.gunde-talent-id-talent13.enabled&buff.bloodbound_spirit.up&cooldown.rupture.remains>0&resource.blood_feathers.current>0&(!legendary.wrists_a_criticalstrike.equipped|(buff.deaths_arc.up&buff.harvesters_toll.up))
-actions+=/reign_in_blood,if=buff.bloodbound_spirit.up
+# Bloodcraze spends feathers before Reign in Blood; Carrion waits only for selected talent buffs.
+actions+=/owed_in_blood,if=talent.gunde-talent-id-talent13.enabled&buff.bloodbound_spirit.up&cooldown.rupture.remains>0&resource.blood_feathers.current>0&(!legendary.wrists_a_criticalstrike.equipped|((!talent.gunde-talent-id-talent1.enabled|buff.deaths_arc.up)&(!talent.gunde-talent-id-talent4.enabled|buff.harvesters_toll.up)))
+# Keep Reign in Blood cycling independently of Spirit availability.
+actions+=/reign_in_blood
 actions+=/blood_arc,if=legendary.wrists_a_criticalstrike.equipped&buff.carrion_onslaught.up
 
 # Put the equipped weapon inside Reign in Blood when the full burst window is active.

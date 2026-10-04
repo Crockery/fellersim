@@ -2,17 +2,22 @@
 actions=/weapon_shadow_mark
 actions+=/weapon_frost_volley
 
-# Assemble Elarion's major damage window as its pieces become available.
+# Assemble Elarion's damage window; spend affordable Spirit without overwriting Event Horizon.
 actions+=/skystriders_grace
-actions+=/event_horizon,if=resource.spirit.current=resource.spirit.max
+actions+=/event_horizon,if=!buff.event_horizon.up
 actions+=/skystriders_supremacy,if=talent.bowguy-talent-id-talent13.enabled
 
 # Without Fervent Supremacy, empty the short Multishot window immediately.
 actions+=/multishot,if=!talent.bowguy-talent-id-talent13.enabled&buff.skystriders_supremacy.up
 
-# Hold Lunarlight Mark for Barrage, with Starfall active before the channel.
-actions+=/lunarlight_mark,if=cooldown.heartseeker_barrage.ready
+# Resurgent Winds makes Mark a charge generator; otherwise hold it for Barrage.
+actions+=/lunarlight_mark,if=cooldown.heartseeker_barrage.ready|talent.bowguy-talent-id-talent3.enabled
 actions+=/starfall_volley
+
+# Reset Grace and Starfall early on one target, except in Final Crescendo builds.
+actions+=/weapon_arcane_channel,if=targets.count=1&!talent.bowguy-talent-id-talent15.enabled&cooldown.skystriders_grace.remains>0&cooldown.starfall_volley.remains>0
+
+# Consume the legendary ring proc before spending other rotational cooldowns.
 actions+=/heartseeker_barrage,if=legendary.ring_c_spirit_spirit.equipped&buff.impending_heartseeker.up
 
 # Consume Resurgent Winds, establish Shimmer, and avoid capping Highwind Arrow charges.

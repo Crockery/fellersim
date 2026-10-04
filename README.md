@@ -95,7 +95,10 @@ and a seed derived from the semantic inputs. Iterations must be 100–100,000;
 targets must be 1–20. An explicit seed is sixteen lowercase hexadecimal digits.
 Comments, editor IDs, and run IDs do not change the derived seed.
 
-Every encounter lasts five minutes against stationary, co-located dummies.
+Every encounter lasts five minutes against stationary, co-located immortal
+dummies. Each target uses 6,637,912 maximum health and Spirit value 45 for
+damage-derived Spirit, based on Eternal 23 Warlord Brogg. These fixed benchmark
+values do not scale with the character, and no party damage is simulated.
 The current six supported heroes are Ardeos, Rime, Tariq, Elarion, Mara,
 and Gunde. `fellersim --version` reports the simulator and bundled data/model
 versions. Results include the game build, model, seed, and evidence summaries;

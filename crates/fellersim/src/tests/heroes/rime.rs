@@ -487,7 +487,7 @@ fn undulating_spirit_grants_two_timed_refunds_and_starting_spirit() {
     assert_eq!(iteration.hero.rime().undulating_spirit_until, 12_400);
     iteration.process_events_through(12_400);
     iteration.try_rime_spirit_refund(1);
-    assert_eq!(iteration.shared.spirit, 4.0);
+    assert_eq!(iteration.shared.spirit, 8.0); // Four passive ticks; no extra refund.
     assert_eq!(iteration.test_proc_count("spirit-refund"), 0);
     assert_eq!(iteration.hero.rime().undulating_spirit_stacks, 0);
     assert_eq!(iteration.hero.rime().undulating_spirit_until, 0);
@@ -1884,4 +1884,111 @@ fn bursting_cast_applies_one_debuff_before_its_area_pulses() {
     run.process_events_through(3_000);
     assert_eq!(run.ability_totals("test:bursting-ice").hits, 18);
     assert_eq!(run.hero.rime().anima, 6.0);
+}
+
+fn ranked_rime_default_profile(torrent: bool) -> NormalizedDpsProfile {
+    let source = if torrent {
+        include_str!("../fixtures/apl-builds/rime/variants/torrent.json")
+    } else {
+        include_str!("../fixtures/apl-builds/rime/character.json")
+    };
+    let document: serde_json::Value = serde_json::from_str(source).unwrap();
+    let build = serde_json::from_value(document["build"].clone()).unwrap();
+    let (mut profile, _) = crate::preparation::prepare_character(&build, 1).unwrap();
+    profile.abilities.retain(|ability| {
+        !matches!(
+            ability.kind,
+            DpsAbilityKind::WeaponArcaneChannel
+                | DpsAbilityKind::WeaponFrostVolley
+                | DpsAbilityKind::WeaponShadowMark
+                | DpsAbilityKind::WeaponChainLightning
+        )
+    });
+    profile
+}
+
+fn shipped_rime_apl() -> ActionPriorityListV2 {
+    crate::parse_apl(&shipped_apl_source("rime")).unwrap()
+}
+
+fn put_rime_major_buffs_on_cooldown(iteration: &mut Iteration<'_>) {
+    iteration.shared.spirit = 0.0;
+    for kind in [
+        DpsAbilityKind::IceBlitz,
+        DpsAbilityKind::WintersBlessing,
+        DpsAbilityKind::FlightOfTheNavir,
+    ] {
+        let charges = iteration.ability(kind).unwrap().maximum_charges;
+        iteration.common.cooldowns.insert(
+            kind,
+            CooldownState {
+                remaining_ms: 30_000.0,
+                used_charges: charges,
+            },
+        );
+    }
+}
+
+#[test]
+fn default_rime_spends_actual_spirit_cost_but_preserves_active_wrath() {
+    let apl = shipped_rime_apl();
+    for cost in [85.0, 100.0] {
+        let mut profile = ranked_rime_default_profile(false);
+        profile
+            .abilities
+            .iter_mut()
+            .find(|ability| ability.kind == DpsAbilityKind::WrathOfWinter)
+            .unwrap()
+            .spirit_cost = cost;
+        let mut iteration = Iteration::new(&profile, &apl, 1, 41);
+        let wrath = iteration.common.abilities_by_kind[&DpsAbilityKind::WrathOfWinter];
+        iteration.shared.spirit = cost - 0.01;
+        assert_ne!(iteration.choose_action(), Some(wrath));
+        iteration.shared.spirit = cost;
+        assert!(cost < profile.max_spirit);
+        assert_eq!(iteration.choose_action(), Some(wrath));
+        iteration.hero.rime_mut().wrath_of_winter_until = 1_000;
+        assert_ne!(iteration.choose_action(), Some(wrath));
+        iteration.common.now_ms = 1_000;
+        assert_eq!(iteration.choose_action(), Some(wrath));
+    }
+}
+
+#[test]
+fn default_rime_consumes_glacial_assault_before_capped_cold_snap() {
+    let profile = ranked_rime_default_profile(false);
+    let apl = shipped_rime_apl();
+    let mut iteration = Iteration::new(&profile, &apl, 3, 42);
+    put_rime_major_buffs_on_cooldown(&mut iteration);
+    iteration.hero.rime_mut().winter_orbs = 0;
+    iteration.hero.rime_mut().glacial_assault_stacks = 4;
+    assert!(iteration.can_cast(DpsAbilityKind::ColdSnap).is_some());
+    assert_eq!(
+        iteration.choose_action(),
+        Some(iteration.common.abilities_by_kind[&DpsAbilityKind::GlacialBlast])
+    );
+    iteration.hero.rime_mut().glacial_assault_stacks = 3;
+    assert_eq!(
+        iteration.choose_action(),
+        Some(iteration.common.abilities_by_kind[&DpsAbilityKind::ColdSnap])
+    );
+}
+
+#[test]
+fn default_rime_consumes_soulfrost_even_when_orbs_are_full() {
+    let profile = ranked_rime_default_profile(true);
+    let apl = shipped_rime_apl();
+    let mut iteration = Iteration::new(&profile, &apl, 1, 43);
+    put_rime_major_buffs_on_cooldown(&mut iteration);
+    iteration.hero.rime_mut().winter_orbs = profile.max_secondary_resource;
+    iteration.hero.rime_mut().soulfrost_torrent_until = 10_000;
+    assert_eq!(
+        iteration.choose_action(),
+        Some(iteration.common.abilities_by_kind[&DpsAbilityKind::FreezingTorrent])
+    );
+    iteration.hero.rime_mut().soulfrost_torrent_until = 0;
+    assert_eq!(
+        iteration.choose_action(),
+        Some(iteration.common.abilities_by_kind[&DpsAbilityKind::BurstingIce])
+    );
 }

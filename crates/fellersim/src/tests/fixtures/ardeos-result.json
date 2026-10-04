@@ -155,7 +155,7 @@
   },
   "iterations": 100,
   "meanDps": 173.72979999999995,
-  "modelVersion": "ardeos-stationary-dummies-v45",
+  "modelVersion": "ardeos-stationary-dummies-v49",
   "primaryTargetDps": 88.27863333333333,
   "procs": [
     {

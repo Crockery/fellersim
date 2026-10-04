@@ -1,0 +1,603 @@
+{
+  "format": "fellership-character-planner",
+  "version": 6,
+  "build": {
+    "schemaVersion": 6,
+    "heroId": "gunde",
+    "talentPoints": 14,
+    "selectedTalentIds": [
+      "gunde-talent-id-talent5",
+      "gunde-talent-id-talent12",
+      "gunde-talent-id-talent6",
+      "gunde-talent-id-talent11",
+      "gunde-talent-id-talent18",
+      "gunde-talent-id-talent14",
+      "gunde-talent-id-talent15",
+      "gunde-talent-id-talent16",
+      "gunde-talent-id-talent4"
+    ],
+    "positions": [
+      {
+        "positionId": "head",
+        "item": {
+          "itemId": "head-setb-b-crit",
+          "itemLevel": 315,
+          "rarity": "Heroic",
+          "appliedTempers": 8,
+          "rolledModifiers": [
+            {
+              "slotId": "guaranteed:0:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Strength"
+            },
+            {
+              "slotId": "guaranteed:2:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Strength"
+            }
+          ],
+          "gems": [],
+          "traitTree": null,
+          "blessings": [
+            {
+              "slotId": "random:0:AbilityRank",
+              "blessingId": "DynamicItemAbilityRank.12",
+              "rank": 1
+            },
+            {
+              "slotId": "random:1:AbilityRank",
+              "blessingId": "DynamicItemAbilityRank.12",
+              "rank": 1
+            }
+          ]
+        }
+      },
+      {
+        "positionId": "necklace",
+        "item": {
+          "itemId": "neck-setc-a-crit-haste",
+          "itemLevel": 315,
+          "rarity": "Heroic",
+          "appliedTempers": 8,
+          "rolledModifiers": [
+            {
+              "slotId": "guaranteed:0:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Haste"
+            },
+            {
+              "slotId": "guaranteed:3:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Haste"
+            },
+            {
+              "slotId": "random:0:GemPower",
+              "kind": "gem-power",
+              "choiceId": "ItemID.GemType.Ruby"
+            }
+          ],
+          "gems": [],
+          "traitTree": {
+            "rolls": [
+              {
+                "nodeId": "ItemTraitTrees.EASeason3Necklace:crtraittreegraphnode-7",
+                "traitId": "ItemTrait.ID.Fox"
+              },
+              {
+                "nodeId": "ItemTraitTrees.EASeason3Necklace:crtraittreegraphnode-6",
+                "traitId": "ItemTrait.ID.DeathPreventionWithImmunity"
+              },
+              {
+                "nodeId": "ItemTraitTrees.EASeason3Necklace:crtraittreegraphnode-8",
+                "traitId": "ItemTrait.ID.Bull"
+              },
+              {
+                "nodeId": "ItemTraitTrees.EASeason3Necklace:crtraittreegraphnode-9",
+                "traitId": "ItemTrait.ID.Salamander"
+              }
+            ],
+            "selectedNodeIds": [
+              "ItemTraitTrees.EASeason3Necklace:crtraittreegraphnode-6",
+              "ItemTraitTrees.EASeason3Necklace:crtraittreegraphnode-8"
+            ]
+          },
+          "blessings": []
+        }
+      },
+      {
+        "positionId": "shoulders",
+        "item": {
+          "itemId": "shoulders-setb-c-expertise",
+          "itemLevel": 315,
+          "rarity": "Heroic",
+          "appliedTempers": 8,
+          "rolledModifiers": [
+            {
+              "slotId": "guaranteed:0:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Strength"
+            },
+            {
+              "slotId": "guaranteed:2:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Strength"
+            },
+            {
+              "slotId": "random:0:ItemTrait",
+              "kind": "item-trait",
+              "choiceId": "ItemTrait.ID.WeaponDamageReductionPrimaryStatIncrease"
+            },
+            {
+              "slotId": "random:1:ItemTrait",
+              "kind": "item-trait",
+              "choiceId": "ItemTrait.ID.WeaponCritChanceCooldownReduction"
+            }
+          ],
+          "gems": [],
+          "traitTree": null,
+          "blessings": []
+        }
+      },
+      {
+        "positionId": "back",
+        "item": {
+          "itemId": "back-sete-a-expertise",
+          "itemLevel": 315,
+          "rarity": "Heroic",
+          "appliedTempers": 8,
+          "rolledModifiers": [
+            {
+              "slotId": "guaranteed:0:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Haste"
+            },
+            {
+              "slotId": "guaranteed:3:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Haste"
+            },
+            {
+              "slotId": "random:0:ItemTrait",
+              "kind": "item-trait",
+              "choiceId": "ItemTrait.ID.OffensiveAbilityHasteRatingStacking"
+            }
+          ],
+          "gems": [
+            {
+              "socketId": "socket:0",
+              "gemId": "ItemID.GemType.Emerald.Tier4"
+            }
+          ],
+          "traitTree": null,
+          "blessings": [
+            {
+              "slotId": "random:1:AbilityRank",
+              "blessingId": "DynamicItemAbilityRank.12",
+              "rank": 1
+            }
+          ]
+        }
+      },
+      {
+        "positionId": "chest",
+        "item": {
+          "itemId": "chest-c-haste",
+          "itemLevel": 315,
+          "rarity": "Heroic",
+          "appliedTempers": 8,
+          "rolledModifiers": [
+            {
+              "slotId": "guaranteed:0:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Strength"
+            },
+            {
+              "slotId": "guaranteed:1:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Strength"
+            },
+            {
+              "slotId": "random:0:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Strength"
+            },
+            {
+              "slotId": "random:1:ItemTrait",
+              "kind": "item-trait",
+              "choiceId": "ItemTrait.ID.CommitToHasteRatingAndWeaponCooldown"
+            }
+          ],
+          "gems": [],
+          "traitTree": null,
+          "blessings": [
+            {
+              "slotId": "random:2:AbilityRank",
+              "blessingId": "DynamicItemAbilityRank.03",
+              "rank": 1
+            }
+          ]
+        }
+      },
+      {
+        "positionId": "wrists",
+        "item": {
+          "itemId": "wrists-setd-a-expertise",
+          "itemLevel": 315,
+          "rarity": "Heroic",
+          "appliedTempers": 8,
+          "rolledModifiers": [
+            {
+              "slotId": "guaranteed:0:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Haste"
+            },
+            {
+              "slotId": "guaranteed:3:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Haste"
+            },
+            {
+              "slotId": "random:0:ItemTrait",
+              "kind": "item-trait",
+              "choiceId": "ItemTrait.ID.OffensiveAbilityHasteRatingStacking"
+            }
+          ],
+          "gems": [
+            {
+              "socketId": "socket:0",
+              "gemId": "ItemID.GemType.Amethyst.Tier4"
+            }
+          ],
+          "traitTree": null,
+          "blessings": [
+            {
+              "slotId": "random:1:AbilityRank",
+              "blessingId": "DynamicItemAbilityRank.12",
+              "rank": 1
+            }
+          ]
+        }
+      },
+      {
+        "positionId": "hands",
+        "item": {
+          "itemId": "hands-sete-a-spirit",
+          "itemLevel": 315,
+          "rarity": "Heroic",
+          "appliedTempers": 8,
+          "rolledModifiers": [
+            {
+              "slotId": "guaranteed:0:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Haste"
+            },
+            {
+              "slotId": "guaranteed:2:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Haste"
+            },
+            {
+              "slotId": "random:0:GemPower",
+              "kind": "gem-power",
+              "choiceId": "ItemID.GemType.Emerald"
+            },
+            {
+              "slotId": "random:1:GemPower",
+              "kind": "gem-power",
+              "choiceId": "ItemID.GemType.Emerald"
+            }
+          ],
+          "gems": [],
+          "traitTree": null,
+          "blessings": []
+        }
+      },
+      {
+        "positionId": "waist",
+        "item": {
+          "itemId": "waist-setc-a-haste",
+          "itemLevel": 315,
+          "rarity": "Heroic",
+          "appliedTempers": 8,
+          "rolledModifiers": [
+            {
+              "slotId": "guaranteed:0:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Haste"
+            },
+            {
+              "slotId": "guaranteed:2:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Haste"
+            },
+            {
+              "slotId": "random:0:ItemTrait",
+              "kind": "item-trait",
+              "choiceId": "ItemTrait.ID.OffensiveAbilityHasteRatingStacking"
+            },
+            {
+              "slotId": "random:1:ItemTrait",
+              "kind": "item-trait",
+              "choiceId": "ItemTrait.ID.GemTargetedSpikeProc"
+            }
+          ],
+          "gems": [],
+          "traitTree": null,
+          "blessings": []
+        }
+      },
+      {
+        "positionId": "feet",
+        "item": {
+          "itemId": "feet-c-spirit",
+          "itemLevel": 315,
+          "rarity": "Heroic",
+          "appliedTempers": 8,
+          "rolledModifiers": [
+            {
+              "slotId": "guaranteed:0:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Haste"
+            },
+            {
+              "slotId": "guaranteed:1:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Haste"
+            },
+            {
+              "slotId": "random:0:ItemTrait",
+              "kind": "item-trait",
+              "choiceId": "ItemTrait.ID.CommitToHasteRatingAndWeaponCooldown"
+            }
+          ],
+          "gems": [],
+          "traitTree": null,
+          "blessings": [
+            {
+              "slotId": "random:1:AbilityRank",
+              "blessingId": "DynamicItemAbilityRank.05",
+              "rank": 1
+            },
+            {
+              "slotId": "random:2:AbilityRank",
+              "blessingId": "DynamicItemAbilityRank.05",
+              "rank": 1
+            }
+          ]
+        }
+      },
+      {
+        "positionId": "ring-1",
+        "item": {
+          "itemId": "legendary-ring-c-criticakstrike-expertise",
+          "itemLevel": 360,
+          "rarity": "Legendary",
+          "appliedTempers": 0,
+          "rolledModifiers": [
+            {
+              "slotId": "guaranteed:0:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Strength"
+            },
+            {
+              "slotId": "guaranteed:1:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Haste"
+            }
+          ],
+          "gems": [
+            {
+              "socketId": "socket:0",
+              "gemId": "ItemID.GemType.Sapphire.Tier4"
+            }
+          ],
+          "traitTree": null,
+          "blessings": []
+        }
+      },
+      {
+        "positionId": "ring-2",
+        "item": {
+          "itemId": "ring-setd-c-crit-haste",
+          "itemLevel": 315,
+          "rarity": "Heroic",
+          "appliedTempers": 8,
+          "rolledModifiers": [
+            {
+              "slotId": "guaranteed:0:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Haste"
+            },
+            {
+              "slotId": "guaranteed:3:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Haste"
+            },
+            {
+              "slotId": "random:0:ItemTrait",
+              "kind": "item-trait",
+              "choiceId": "ItemTrait.ID.CommitToHasteRatingAndWeaponCooldown"
+            }
+          ],
+          "gems": [
+            {
+              "socketId": "socket:0",
+              "gemId": "ItemID.GemType.Emerald.Tier4"
+            }
+          ],
+          "traitTree": null,
+          "blessings": [
+            {
+              "slotId": "random:1:AbilityRank",
+              "blessingId": "DynamicItemAbilityRank.03",
+              "rank": 1
+            }
+          ]
+        }
+      },
+      {
+        "positionId": "trinket-1",
+        "item": {
+          "itemId": "relic-c-crit-spirit-polymorph",
+          "itemLevel": 315,
+          "rarity": "Heroic",
+          "appliedTempers": 8,
+          "rolledModifiers": [
+            {
+              "slotId": "guaranteed:0:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Haste"
+            },
+            {
+              "slotId": "guaranteed:2:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Haste"
+            }
+          ],
+          "gems": [],
+          "traitTree": null,
+          "blessings": [
+            {
+              "slotId": "random:0:AbilityRank",
+              "blessingId": "DynamicItemAbilityRank.03",
+              "rank": 1
+            },
+            {
+              "slotId": "random:1:AbilityRank",
+              "blessingId": "DynamicItemAbilityRank.03",
+              "rank": 1
+            }
+          ]
+        }
+      },
+      {
+        "positionId": "trinket-2",
+        "item": {
+          "itemId": "relic-b-haste-damagereductionother",
+          "itemLevel": 315,
+          "rarity": "Heroic",
+          "appliedTempers": 8,
+          "rolledModifiers": [
+            {
+              "slotId": "guaranteed:0:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Spirit"
+            },
+            {
+              "slotId": "guaranteed:2:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Spirit"
+            }
+          ],
+          "gems": [],
+          "traitTree": null,
+          "blessings": [
+            {
+              "slotId": "random:0:AbilityRank",
+              "blessingId": "DynamicItemAbilityRank.05",
+              "rank": 1
+            },
+            {
+              "slotId": "random:1:AbilityRank",
+              "blessingId": "DynamicItemAbilityRank.05",
+              "rank": 1
+            }
+          ]
+        }
+      },
+      {
+        "positionId": "weapon",
+        "item": {
+          "itemId": "weapon-b-expertise-gunde",
+          "itemLevel": 315,
+          "rarity": "Heroic",
+          "appliedTempers": 8,
+          "rolledModifiers": [
+            {
+              "slotId": "guaranteed:0:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Haste"
+            },
+            {
+              "slotId": "guaranteed:3:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Haste"
+            },
+            {
+              "slotId": "random:0:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Haste"
+            },
+            {
+              "slotId": "random:1:RandomStat",
+              "kind": "rolled-stat",
+              "choiceId": "Haste"
+            }
+          ],
+          "gems": [],
+          "traitTree": {
+            "rolls": [
+              {
+                "nodeId": "ItemTraitTrees.EASeason3Weapon:crtraittreegraphnode-28",
+                "traitId": "ItemTrait.ID.AbilityToIncreasedMainStat"
+              },
+              {
+                "nodeId": "ItemTraitTrees.EASeason3Weapon:crtraittreegraphnode-27",
+                "traitId": "ItemTrait.ID.CommitToHasteRatingAndWeaponCooldown"
+              },
+              {
+                "nodeId": "ItemTraitTrees.EASeason3Weapon:crtraittreegraphnode-29",
+                "traitId": "ItemTrait.ID.FirstIncomingHitToReducedIncomingDamageBuff"
+              },
+              {
+                "nodeId": "ItemTraitTrees.EASeason3Weapon:crtraittreegraphnode-30",
+                "traitId": "ItemTrait.ID.RelicToDamageReduction"
+              },
+              {
+                "nodeId": "ItemTraitTrees.EASeason3Weapon:crtraittreegraphnode-31",
+                "traitId": "ItemTrait.ID.IncomingHealToStackingHealWithThreshold"
+              },
+              {
+                "nodeId": "ItemTraitTrees.EASeason3Weapon:crtraittreegraphnode-32",
+                "traitId": "ItemTrait.ID.ExtraDotHotOnEffectApplicationProc"
+              },
+              {
+                "nodeId": "ItemTraitTrees.EASeason3Weapon:crtraittreegraphnode-33",
+                "traitId": "ItemTrait.ID.OffensiveAbilityHasteRatingStacking"
+              },
+              {
+                "nodeId": "ItemTraitTrees.EASeason3Weapon:crtraittreegraphnode-34",
+                "traitId": "ItemTrait.ID.IncomingDamageToDefenceAndDamage"
+              },
+              {
+                "nodeId": "ItemTraitTrees.EASeason3Weapon:crtraittreegraphnode-35",
+                "traitId": "ItemTrait.ID.IncreasedStaminaToHealthConversion"
+              },
+              {
+                "nodeId": "ItemTraitTrees.EASeason3Weapon:crtraittreegraphnode-36",
+                "traitId": "ItemTrait.ID.DamageReductionWhenHealthy"
+              },
+              {
+                "nodeId": "ItemTraitTrees.EASeason3Weapon:crtraittreegraphnode-37",
+                "traitId": "ItemTrait.ID.WeaponDamageReductionPrimaryStatIncrease"
+              },
+              {
+                "nodeId": "ItemTraitTrees.EASeason3Weapon:crtraittreegraphnode-38",
+                "traitId": "ItemTrait.ID.WeaponAndSpiritPoints"
+              }
+            ],
+            "selectedNodeIds": [
+              "ItemTraitTrees.EASeason3Weapon:crtraittreegraphnode-27",
+              "ItemTraitTrees.EASeason3Weapon:crtraittreegraphnode-31",
+              "ItemTraitTrees.EASeason3Weapon:crtraittreegraphnode-33",
+              "ItemTraitTrees.EASeason3Weapon:crtraittreegraphnode-36",
+              "ItemTraitTrees.EASeason3Weapon:crtraittreegraphnode-38"
+            ]
+          },
+          "blessings": []
+        }
+      }
+    ],
+    "disabledConditionalContributionIds": []
+  }
+}

@@ -540,6 +540,7 @@ fn non_hasted_weapon_actor_offsets_keep_their_cooked_schedule() {
         .common
         .queue
         .iter()
+        .filter(|event| !matches!(event.0.kind, EventKind::Core(CoreEvent::PassiveSpiritRegen)))
         .map(|event| event.0.at_ms)
         .collect::<BTreeSet<_>>();
     assert_eq!(event_times, BTreeSet::from([1_000, 2_000]));
@@ -1060,7 +1061,7 @@ fn incinerate_casts_then_uses_hasted_immediate_and_full_partial_ticks() {
     assert_eq!(result.damage, 800.0);
     assert_eq!(
         iteration.shared.spirit,
-        90.0 + 8.0 * f64::from((100.0_f64 / 1337.0 * 0.75) as f32)
+        91.0 + 8.0 * f64::from((100.0_f64 / 6_637_912.0 * 11.25) as f32)
     );
     assert_eq!(iteration.shared.heroism_until, 21_500);
 }
@@ -4327,6 +4328,138 @@ fn firemage_periodic_recapture_retains_proc_bonus_and_updates_detonate_sample() 
             iteration.ability_totals(&source.id).damage,
             500.0,
             "{kind:?}"
+        );
+    }
+}
+
+fn ranked_default_profile(rolling_flames: bool) -> NormalizedDpsProfile {
+    let document: serde_json::Value =
+        serde_json::from_str(include_str!("../fixtures/apl-builds/ardeos/character.json")).unwrap();
+    let mut build: crate::preparation::CharacterBuild =
+        serde_json::from_value(document["build"].clone()).unwrap();
+    if !rolling_flames {
+        build
+            .selected_talent_ids
+            .retain(|id| id != "firemage-talent-id-talent8");
+    }
+    let (mut profile, _) = crate::preparation::prepare_character(&build, 1).unwrap();
+    // The default must skip all unequipped weapon rules, including cooldown references.
+    profile.abilities.retain(|ability| {
+        !matches!(
+            ability.kind,
+            DpsAbilityKind::WeaponArcaneChannel
+                | DpsAbilityKind::WeaponFrostVolley
+                | DpsAbilityKind::WeaponShadowMark
+                | DpsAbilityKind::WeaponChainLightning
+        )
+    });
+    profile
+}
+
+fn shipped_ardeos_apl() -> ActionPriorityListV2 {
+    crate::parse_apl(&shipped_apl_source("ardeos")).unwrap()
+}
+
+#[test]
+fn default_ardeos_spends_actual_spirit_cost_without_waiting_for_cap_or_dot_expiry() {
+    let apl = shipped_ardeos_apl();
+    for cost in [85.0, 100.0] {
+        let mut profile = ranked_default_profile(true);
+        let spirit = profile
+            .abilities
+            .iter_mut()
+            .find(|ability| ability.kind == DpsAbilityKind::Incinerate)
+            .unwrap();
+        spirit.spirit_cost = cost;
+        let spirit = spirit.clone();
+        let mut iteration = Iteration::new(&profile, &apl, 1, 31);
+        iteration.apply_dot(
+            0,
+            spirit.kind,
+            &compiled_ability(&spirit),
+            spirit.dot.unwrap(),
+            DamageContext::for_cast(1),
+        );
+        iteration.hero.ardeos_mut().wildfire_until = 10_000;
+        let index = iteration.common.abilities_by_kind[&DpsAbilityKind::Incinerate];
+        iteration.shared.spirit = cost - 0.01;
+        assert_ne!(iteration.choose_action(), Some(index));
+        iteration.shared.spirit = cost;
+        assert!(cost < profile.max_spirit);
+        assert_eq!(iteration.choose_action(), Some(index));
+    }
+}
+
+#[test]
+fn default_ardeos_pools_the_frog_opener_only_with_rolling_flames() {
+    let apl = shipped_ardeos_apl();
+    for rolling_flames in [false, true] {
+        let profile = ranked_default_profile(rolling_flames);
+        let iteration = Iteration::new(&profile, &apl, 1, 32);
+        let expected = if rolling_flames {
+            DpsAbilityKind::SearingBlaze
+        } else {
+            DpsAbilityKind::FireFrogs
+        };
+        assert_eq!(
+            iteration.choose_action(),
+            Some(iteration.common.abilities_by_kind[&expected]),
+            "Rolling Flames: {rolling_flames}"
+        );
+    }
+}
+
+#[test]
+fn default_ardeos_uses_spare_engulfing_and_single_target_fire_ball_charges() {
+    let apl = shipped_ardeos_apl();
+    for rolling_flames in [false, true] {
+        let profile = ranked_default_profile(rolling_flames);
+        let mut iteration = Iteration::new(&profile, &apl, 1, 33);
+        iteration.shared.spirit = 0.0;
+        for kind in [DpsAbilityKind::Wildfire, DpsAbilityKind::FireFrogs] {
+            iteration.common.cooldowns.insert(
+                kind,
+                CooldownState {
+                    remaining_ms: 20_000.0,
+                    used_charges: 1,
+                },
+            );
+        }
+        let searing = iteration
+            .ability(DpsAbilityKind::SearingBlaze)
+            .unwrap()
+            .clone();
+        iteration.apply_dot(
+            0,
+            searing.kind,
+            &searing,
+            searing.dot.unwrap(),
+            DamageContext::for_cast(1),
+        );
+        let engulfing = iteration.common.abilities_by_kind[&DpsAbilityKind::EngulfingFlames];
+        let fire_ball = iteration.common.abilities_by_kind[&DpsAbilityKind::FireBall];
+        assert_eq!(
+            iteration.choose_action(),
+            Some(if rolling_flames { engulfing } else { fire_ball })
+        );
+        iteration.common.cooldowns.insert(
+            DpsAbilityKind::EngulfingFlames,
+            CooldownState {
+                remaining_ms: 10_000.0,
+                used_charges: 1,
+            },
+        );
+        assert_eq!(iteration.choose_action(), Some(fire_ball));
+        iteration.common.cooldowns.insert(
+            DpsAbilityKind::FireBall,
+            CooldownState {
+                remaining_ms: 10_000.0,
+                used_charges: 1,
+            },
+        );
+        assert_eq!(
+            iteration.choose_action(),
+            Some(iteration.common.abilities_by_kind[&DpsAbilityKind::InfernalWave])
         );
     }
 }

@@ -118,7 +118,7 @@ fn kindling_healing_ticks_feed_critical_dps_but_not_damage_or_diamond_recursion(
     assert_eq!(iteration.test_dynamic_counter(COUNTER), 6);
     assert_eq!(iteration.test_proc_count(KINDLING), 1);
     assert_eq!(iteration.common.result.damage, 0.0);
-    assert_eq!(iteration.shared.spirit, spirit);
+    assert_eq!(iteration.shared.spirit, spirit + 3.0); // Three native regen ticks.
     assert!(
         !iteration
             .shared

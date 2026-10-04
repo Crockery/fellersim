@@ -938,3 +938,107 @@ fn gunde_oathshatter_excludes_its_trigger_target_and_uses_secondary_count() {
         );
     }
 }
+
+#[test]
+fn default_gunde_spends_affordable_spirit_without_waiting_for_reign() {
+    let document: serde_json::Value =
+        serde_json::from_str(include_str!("../fixtures/apl-builds/gunde/character.json")).unwrap();
+    let mut build: crate::preparation::CharacterBuild =
+        serde_json::from_value(document["build"].clone()).unwrap();
+    build
+        .positions
+        .iter_mut()
+        .find(|p| p.position_id == "weapon")
+        .unwrap()
+        .item = None;
+    let (profile, _) = crate::preparation::prepare_character(&build, 1).unwrap();
+    let apl = crate::parse_apl(&shipped_apl_source("gunde")).unwrap();
+    for cost in [95.0, 100.0] {
+        let mut profile = profile.clone();
+        profile
+            .abilities
+            .iter_mut()
+            .find(|a| a.kind == DpsAbilityKind::BloodboundSpirit)
+            .unwrap()
+            .spirit_cost = cost;
+        let mut it = Iteration::new(&profile, &apl, 1, 231);
+        for kind in [
+            DpsAbilityKind::Rupture,
+            DpsAbilityKind::BloodArc,
+            DpsAbilityKind::ReignInBlood,
+        ] {
+            it.common.cooldowns.insert(
+                kind,
+                CooldownState {
+                    remaining_ms: 30_000.0,
+                    used_charges: 1,
+                },
+            );
+        }
+        it.hero.gunde_mut().serrated_edge_until = 10_000;
+        let spirit = it.common.abilities_by_kind[&DpsAbilityKind::BloodboundSpirit];
+        let reign = it.common.abilities_by_kind[&DpsAbilityKind::ReignInBlood];
+        it.shared.spirit = cost - 0.01;
+        assert_ne!(it.choose_action(), Some(spirit));
+        it.shared.spirit = cost;
+        assert!(cost < profile.max_spirit);
+        assert_eq!(it.choose_action(), Some(spirit));
+        it.hero.gunde_mut().bloodbound_spirit_until = 1_000;
+        assert_ne!(it.choose_action(), Some(spirit));
+        it.common.now_ms = 1_000;
+        assert_eq!(it.choose_action(), Some(spirit));
+        it.shared.spirit = 0.0;
+        it.common.cooldowns.remove(&DpsAbilityKind::ReignInBlood);
+        assert_eq!(it.choose_action(), Some(reign));
+    }
+}
+
+#[test]
+fn default_gunde_carrion_setup_only_waits_for_selected_talent_buffs() {
+    let apl = crate::parse_apl(&shipped_apl_source("gunde")).unwrap();
+    for document in [
+        include_str!("../fixtures/apl-builds/gunde/variants/wrists-bloodcraze.json"),
+        include_str!("../fixtures/apl-builds/gunde/variants/bloodcraze-no-deaths-arc.json"),
+        include_str!("../fixtures/apl-builds/gunde/variants/bloodcraze-no-toll.json"),
+    ] {
+        let document: serde_json::Value = serde_json::from_str(document).unwrap();
+        let mut build: crate::preparation::CharacterBuild =
+            serde_json::from_value(document["build"].clone()).unwrap();
+        build
+            .positions
+            .iter_mut()
+            .find(|p| p.position_id == "weapon")
+            .unwrap()
+            .item = None;
+        let has_arc = build
+            .selected_talent_ids
+            .iter()
+            .any(|t| t == "gunde-talent-id-talent1");
+        let has_toll = build
+            .selected_talent_ids
+            .iter()
+            .any(|t| t == "gunde-talent-id-talent4");
+        let (profile, _) = crate::preparation::prepare_character(&build, 3).unwrap();
+        let mut it = Iteration::new(&profile, &apl, 3, 232);
+        for kind in [DpsAbilityKind::Rupture, DpsAbilityKind::BloodArc] {
+            it.common.cooldowns.insert(
+                kind,
+                CooldownState {
+                    remaining_ms: 30_000.0,
+                    used_charges: 1,
+                },
+            );
+        }
+        it.shared.spirit = profile.max_spirit;
+        it.hero.gunde_mut().serrated_edge_until = 30_000;
+        let spirit = it.common.abilities_by_kind[&DpsAbilityKind::BloodboundSpirit];
+        assert_ne!(it.choose_action(), Some(spirit));
+        if has_arc {
+            it.hero.gunde_mut().deaths_arc_until = 10_000;
+        }
+        if has_toll {
+            it.hero.gunde_mut().harvesters_toll_until = 10_000;
+        }
+        assert_eq!(it.choose_action(), Some(spirit));
+    }
+}

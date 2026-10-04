@@ -1,0 +1,86 @@
+[
+  {
+    "damage": 0,
+    "maxHealth": 1337,
+    "spiritValue": 3,
+    "expected": 0.0
+  },
+  {
+    "damage": 100,
+    "maxHealth": 1337,
+    "spiritValue": 3,
+    "expected": 0.05609573796391487
+  },
+  {
+    "damage": 1337,
+    "maxHealth": 1337,
+    "spiritValue": 3,
+    "expected": 0.75
+  },
+  {
+    "damage": 100000,
+    "maxHealth": 1337,
+    "spiritValue": 3,
+    "expected": 0.75
+  },
+  {
+    "damage": -50,
+    "maxHealth": 1337,
+    "spiritValue": 3,
+    "expected": 0.0
+  },
+  {
+    "damage": 1541,
+    "maxHealth": 3246585,
+    "spiritValue": 3,
+    "expected": 0.00035598943941295147
+  },
+  {
+    "damage": 1581,
+    "maxHealth": 998457,
+    "spiritValue": 3,
+    "expected": 0.001187582383863628
+  },
+  {
+    "damage": 100000,
+    "maxHealth": 25605376,
+    "spiritValue": 45,
+    "expected": 0.04393608495593071
+  },
+  {
+    "damage": 10000,
+    "maxHealth": 100000,
+    "spiritValue": 0,
+    "expected": 0.0
+  },
+  {
+    "damage": 16777217,
+    "maxHealth": 100000000,
+    "spiritValue": 100,
+    "expected": 4.1943039894104
+  },
+  {
+    "damage": 100,
+    "maxHealth": 6637912,
+    "spiritValue": 45,
+    "expected": 0.00016948100528679788
+  },
+  {
+    "damage": 10000,
+    "maxHealth": 6637912,
+    "spiritValue": 45,
+    "expected": 0.016948100179433823
+  },
+  {
+    "damage": 6637912,
+    "maxHealth": 6637912,
+    "spiritValue": 45,
+    "expected": 11.25
+  },
+  {
+    "damage": 10000000,
+    "maxHealth": 6637912,
+    "spiritValue": 45,
+    "expected": 11.25
+  }
+]

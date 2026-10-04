@@ -5,7 +5,13 @@ use std::{
 
 use crate::*;
 
-pub(crate) const MAX_ITERATION_WORK_UNITS: u32 = 100_000;
+// Fully geared profiles include per-target proc listeners and pet events that
+// exceed the old 100k ceiling in ordinary stacked-dummy encounters. The ranked
+// Ardeos regression fixture uses ~825k at 20 targets; prepared profiles retain
+// the separate quarter-budget guard and cancellation checks every 256 units.
+pub(crate) const MAX_ITERATION_WORK_UNITS: u32 = 4_000_000;
+// Increasing the cumulative allowance must not admit oversized single fanouts.
+const MAX_SINGLE_WORK_CHARGE: u32 = 100_000;
 const MAX_ACTIONS_AT_ONE_TIMESTAMP: u32 = 64;
 const MAX_PENDING_EVENTS: usize = 16_384;
 const CANCELLATION_CHECK_WORK_UNITS: u32 = 256;
@@ -47,7 +53,7 @@ impl<'a> ExecutionControl<'a> {
             self.fail_limit();
             return false;
         };
-        if next > MAX_ITERATION_WORK_UNITS {
+        if units > MAX_SINGLE_WORK_CHARGE || next > MAX_ITERATION_WORK_UNITS {
             self.fail_limit();
             return false;
         }
@@ -1059,6 +1065,9 @@ impl<'a> Iteration<'a> {
         iteration.start_wayfarer_cycle();
         iteration.refresh_periodic_healing_clock();
         iteration.start_tariq_passive_fury();
+        // Fresh stationary actors start a new native Spirit regeneration timer.
+        // Default.CRHeroAttributeSet.SpiritRegenPeriod is 3 seconds.
+        iteration.push_event(3_000, CoreEvent::PassiveSpiritRegen);
         iteration
     }
 

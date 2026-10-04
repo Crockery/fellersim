@@ -1,0 +1,42 @@
+{
+  "maxHealth": 6637912,
+  "spiritPointValue": 45,
+  "dataBuildId": "25647984",
+  "source": {
+    "boss": "Warlord Brogg",
+    "gameId": 133,
+    "dungeon": "Stormwatch",
+    "eternalLevel": 23,
+    "rawDifficulty": 43,
+    "observations": [
+      {
+        "reportCode": "1azJhqtn3mBR8DXd",
+        "fightId": 7,
+        "actorId": 75,
+        "date": "2026-10-02T19:07:46.708Z",
+        "damageSnapshots": 2879,
+        "maxHealth": 6637912
+      },
+      {
+        "reportCode": "H7dfp4k8baTMgxym",
+        "fightId": 12,
+        "actorId": 90,
+        "date": "2026-09-30T19:22:36.070Z",
+        "damageSnapshots": 2029,
+        "maxHealth": 6637912
+      }
+    ]
+  },
+  "selection": {
+    "window": {
+      "start": "2026-09-26T22:35:35.221Z",
+      "end": "2026-10-03T22:35:35.221Z"
+    },
+    "sampledReports": 200,
+    "publicReportIndexSize": 774,
+    "distinctEternalClears": 975,
+    "medianEternalLevel": 23,
+    "approximateMedian95Interval": [18, 25],
+    "sampling": "Uniform report sample by SHA-256(seed + colon + reportCode), taking the lowest 200 hashes. Seed: spirit-dummy-eternal-median-2026-10-03-v1. Completed runs inside the window; duplicate dungeon/level/start/end matches within two seconds removed. This is a report-cluster sample, not a census."
+  }
+}

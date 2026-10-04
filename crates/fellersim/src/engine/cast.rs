@@ -831,6 +831,21 @@ impl Iteration<'_> {
             self.advance_to(event.at_ms);
             match event.kind {
                 EventKind::Core(event) => match event {
+                    CoreEvent::PassiveSpiritRegen => {
+                        // Build 25647984 native callback 0x52e2700 adds
+                        // SpiritRegenRate (0.01) * 100, independently of the
+                        // Spirit stat and maximum capacity. This direct write
+                        // emits no damage or refund proc. Stationary actors
+                        // are alive and have no expired-dungeon multiplier.
+                        self.shared.spirit =
+                            (self.shared.spirit + 1.0).min(self.profile.max_spirit);
+                        if self.common.now_ms + 3_000 <= ENCOUNTER_DURATION_MS {
+                            self.push_event(
+                                self.common.now_ms + 3_000,
+                                CoreEvent::PassiveSpiritRegen,
+                            );
+                        }
+                    }
                     CoreEvent::PreparedCastCommit { cast } => {
                         self.commit_prepared_cast(*cast);
                     }

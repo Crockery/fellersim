@@ -16,6 +16,7 @@ pub(crate) enum EventKind {
 
 #[derive(Debug, Clone)]
 pub(crate) enum CoreEvent {
+    PassiveSpiritRegen,
     PreparedCastCommit {
         cast: Box<PreparedCast>,
     },

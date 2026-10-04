@@ -1920,3 +1920,84 @@ fn terminal_mara_tick_uses_rescaled_timer_progress() {
     it.process_events_through(600);
     assert_eq!(it.ability_totals("test:volatile-poison").damage, 70.0);
 }
+
+#[test]
+fn default_mara_spends_actual_spirit_cost_without_overwriting_matriarch() {
+    let document: serde_json::Value =
+        serde_json::from_str(include_str!("../fixtures/apl-builds/mara/character.json")).unwrap();
+    let mut build: crate::preparation::CharacterBuild =
+        serde_json::from_value(document["build"].clone()).unwrap();
+    build
+        .positions
+        .iter_mut()
+        .find(|p| p.position_id == "weapon")
+        .unwrap()
+        .item = None;
+    let (profile, _) = crate::preparation::prepare_character(&build, 1).unwrap();
+    let apl = crate::parse_apl(&shipped_apl_source("mara")).unwrap();
+    for cost in [85.0, 100.0] {
+        let mut profile = profile.clone();
+        profile
+            .abilities
+            .iter_mut()
+            .find(|a| a.kind == DpsAbilityKind::MatriarchMacabre)
+            .unwrap()
+            .spirit_cost = cost;
+        let mut it = Iteration::new(&profile, &apl, 1, 211);
+        it.apply_mara_dot(0, DpsAbilityKind::SeethingPoison, DamageContext::NONE, 1.0);
+        let matriarch = it.common.abilities_by_kind[&DpsAbilityKind::MatriarchMacabre];
+        it.shared.spirit = cost - 0.01;
+        assert_ne!(it.choose_action(), Some(matriarch));
+        it.shared.spirit = cost;
+        assert!(cost < profile.max_spirit);
+        assert_eq!(it.choose_action(), Some(matriarch));
+        it.hero.mara_mut().matriarch_macabre_until = 1_000;
+        assert_ne!(it.choose_action(), Some(matriarch));
+        it.common.now_ms = 1_000;
+        assert_eq!(it.choose_action(), Some(matriarch));
+    }
+}
+
+#[test]
+fn default_mara_consumes_active_malevolence_and_falls_back_after_expiry() {
+    let profile = mara_profile();
+    let apl = crate::parse_apl(&shipped_apl_source("mara")).unwrap();
+    for targets in [1, 3, 5] {
+        let mut it = Iteration::new(&profile, &apl, targets, 212);
+        it.shared.spirit = 0.0;
+        it.hero.mara_mut().seething_poison_max_until = 30_000;
+        it.hero.mara_mut().combo_points = if targets == 1 { 5 } else { 4 };
+        for kind in [
+            DpsAbilityKind::HemorrhagingStrike,
+            DpsAbilityKind::MaidenOfDeath,
+            DpsAbilityKind::FinalStratagem,
+            DpsAbilityKind::BroodingShadows,
+        ] {
+            it.common.cooldowns.insert(
+                kind,
+                CooldownState {
+                    remaining_ms: 30_000.0,
+                    used_charges: 1,
+                },
+            );
+        }
+        let queen = it.common.abilities_by_kind[&DpsAbilityKind::QueensFang];
+        let arachnid = it.common.abilities_by_kind[&DpsAbilityKind::ArachnidAssault];
+        let (usual, empowered) = if targets == 1 {
+            (queen, arachnid)
+        } else {
+            (arachnid, queen)
+        };
+        assert_eq!(it.choose_action(), Some(usual));
+        if targets == 1 {
+            it.hero.mara_mut().malevolence_arachnid_until = 1_000;
+            it.hero.mara_mut().malevolence_arachnid_stacks = 1;
+        } else {
+            it.hero.mara_mut().malevolence_queen_until = 1_000;
+            it.hero.mara_mut().malevolence_queen_stacks = 1;
+        }
+        assert_eq!(it.choose_action(), Some(empowered));
+        it.common.now_ms = 1_000;
+        assert_eq!(it.choose_action(), Some(usual));
+    }
+}

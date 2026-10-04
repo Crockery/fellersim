@@ -25,6 +25,127 @@ fn run(arguments: &[&str]) -> std::process::Output {
         .output()
         .unwrap()
 }
+
+fn help(arguments: &[&str]) -> String {
+    let output = run(arguments);
+    assert!(output.status.success(), "{arguments:?}: {output:?}");
+    assert!(output.stderr.is_empty(), "{output:?}");
+    String::from_utf8(output.stdout).unwrap()
+}
+
+#[test]
+fn root_help_includes_the_complete_command_reference() {
+    let text = help(&["--help"]);
+    assert_eq!(help(&["-h"]), text);
+    assert_eq!(help(&["help"]), text);
+    assert!(text.contains("An action priority list (APL)"));
+    assert!(text.contains("Use --json and --quiet with any command"));
+    assert!(text.contains("fellersim describe --json"));
+
+    let output = run(&["describe", "--json"]);
+    assert!(output.status.success());
+    let discovery: Value = serde_json::from_slice(&output.stdout).unwrap();
+    fn check_commands(command: &Value, path: &str, text: &str) {
+        for child in command["commands"].as_array().unwrap() {
+            let name = child["name"].as_str().unwrap();
+            if name == "help" {
+                continue;
+            }
+            let path = format!("{path} {name}");
+            let heading = format!("Usage: {path}");
+            let section = text
+                .split_once(&heading)
+                .unwrap_or_else(|| panic!("Missing {heading}"))
+                .1
+                .split("\nUsage:")
+                .next()
+                .unwrap();
+            let about = child["about"].as_str().expect("command description");
+            assert!(!about.is_empty(), "{path}");
+            assert!(section.contains(about), "{path}: {about}");
+            for arg in child["arguments"].as_array().unwrap() {
+                if arg["global"] == true || arg["id"] == "help" {
+                    continue;
+                }
+                let description = arg["help"].as_str().expect("argument description");
+                assert!(!description.is_empty(), "{path}: {arg}");
+                assert!(section.contains(description), "{path}: {description}");
+                if let Some(flag) = arg["long"].as_str() {
+                    assert!(section.contains(&format!("--{flag}")), "{path}: {flag}");
+                }
+            }
+            check_commands(child, &path, text);
+        }
+    }
+    check_commands(&discovery["data"]["command"], "fellersim", &text);
+    for flag in ["--json", "--quiet"] {
+        assert_eq!(
+            text.lines()
+                .filter(|line| line.trim_start().starts_with(&format!("{flag} ")))
+                .count(),
+            1,
+            "{flag} should be documented once"
+        );
+    }
+}
+
+#[test]
+fn command_help_stays_focused_and_includes_shared_options() {
+    for (path, expected) in [
+        (vec!["run"], "Set how many fights to simulate"),
+        (vec!["describe"], "Quote nested names"),
+        (vec!["catalog"], "Find an entry with this exact ID"),
+        (vec!["character"], "Create a character JSON file"),
+        (vec!["character", "init"], "Choose a hero by ID"),
+        (vec!["apl", "default"], "Choose a hero by ID"),
+        (vec!["apl", "explain"], "Read ability rules"),
+        (vec!["trace"], "Record at most this many ability decisions"),
+        (
+            vec!["compare"],
+            "Compare every other case with this case ID",
+        ),
+    ] {
+        let text = help(&[path.as_slice(), &["--help"]].concat());
+        assert_eq!(help(&[&["help"], path.as_slice()].concat()), text);
+        assert!(text.contains(expected), "{path:?}: {text}");
+        assert!(text.contains("--json"));
+        assert!(text.contains("--quiet"));
+        assert!(!text.contains("Command reference:"));
+    }
+}
+
+#[test]
+fn json_help_preserves_the_envelope_and_human_help_text() {
+    for args in [
+        vec!["--help"],
+        vec!["help"],
+        vec!["describe", "--help"],
+        vec!["character", "init", "--help"],
+        vec!["help", "apl", "explain"],
+    ] {
+        let text = help(&args);
+        let mut invocations = vec![[&["--json"], args.as_slice()].concat()];
+        // Clap's help subcommand accepts command names only after `help`.
+        if args[0] != "help" {
+            invocations.push([args.as_slice(), &["--json"]].concat());
+        }
+        for json_args in invocations {
+            let output = run(&json_args);
+            assert!(output.status.success(), "{json_args:?}: {output:?}");
+            assert!(output.stderr.is_empty());
+            let response: Value = serde_json::from_slice(&output.stdout).unwrap();
+            assert_eq!(response["ok"], true);
+            assert_eq!(response["protocolVersion"], 1);
+            assert_eq!(response["command"], "help");
+            assert_eq!(
+                response["data"]["text"].as_str().unwrap().trim(),
+                text.trim()
+            );
+            assert!(response["data"]["discovery"]["command"].is_object());
+        }
+    }
+}
+
 #[test]
 fn runs_all_heroes_offline_with_clean_json_output() {
     for name in ["ardeos", "rime", "tariq", "elarion", "mara", "gunde"] {

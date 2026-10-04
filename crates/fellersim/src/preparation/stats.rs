@@ -127,6 +127,8 @@ pub(super) fn prepare(
     let mut mechanic_ids = BTreeSet::new();
     let mut sets = BTreeMap::<String, (u32, String)>::new();
     let mut gems = BTreeMap::<String, f64>::new();
+    let mut trait_ranks = BTreeMap::<String, u32>::new();
+    let mut blessing_ranks = BTreeMap::<String, u32>::new();
     for position in arr(&data["positions"]) {
         let pos = build
             .positions
@@ -218,57 +220,12 @@ pub(super) fn prepare(
             sources.insert(g.gem_id.clone());
         }
         for (id, rank) in character::ranks(item) {
-            let definition = &data["traits"][&id];
-            passive(
-                definition,
-                rank,
-                &mut modifiers,
-                &mut sources,
-                &mut mechanic_ids,
-            );
-            if definition["fullyModeled"] != true
-                && !arr(&definition["source"]["mechanicIds"]).is_empty()
-            {
-                let tree_rank = item
-                    .trait_tree
-                    .as_ref()
-                    .map_or(0, |tree| {
-                        tree.selected_node_ids
-                            .iter()
-                            .filter(|node| {
-                                tree.rolls
-                                    .iter()
-                                    .any(|r| &r.node_id == *node && r.trait_id == id)
-                            })
-                            .count()
-                    })
-                    .max(1);
-                add_source(
-                    &definition["models"][tree_rank.to_string()],
-                    &definition["source"],
-                    format!("unsupported:traits:{}:{id}", pos.position_id),
-                    &mut mechanics,
-                    &mut sources,
-                    &mut mechanic_ids,
-                );
-            }
+            *trait_ranks.entry(id).or_default() += rank;
         }
-        for b in &item.blessings {
-            sources.insert(b.blessing_id.clone());
-            let definition = &data["blessings"][&b.blessing_id];
-            if !arr(&definition["source"]["mechanicIds"]).is_empty() {
-                add_source(
-                    &definition["models"][b.rank.to_string()],
-                    &definition["source"],
-                    format!(
-                        "unsupported:blessings:{}:{}:{}",
-                        pos.position_id, b.blessing_id, b.slot_id
-                    ),
-                    &mut mechanics,
-                    &mut sources,
-                    &mut mechanic_ids,
-                );
-            }
+        for blessing in &item.blessings {
+            *blessing_ranks
+                .entry(blessing.blessing_id.clone())
+                .or_default() += blessing.rank;
         }
         for entry in arr(&definition["sources"]) {
             if string(&entry["source"], "category") == "set-bonuses" {
@@ -298,6 +255,34 @@ pub(super) fn prepare(
                 .as_array_mut()
                 .unwrap()
                 .push(definition["weapon"].clone());
+        }
+    }
+    for (category, ranks) in [("traits", trait_ranks), ("blessings", blessing_ranks)] {
+        for (id, total_rank) in ranks {
+            let definition = &data[category][&id];
+            let rank = total_rank.min(num(definition, "maxRank") as u32);
+            sources.insert(id.clone());
+            if category == "traits" {
+                passive(
+                    definition,
+                    rank,
+                    &mut modifiers,
+                    &mut sources,
+                    &mut mechanic_ids,
+                );
+            }
+            if definition["fullyModeled"] != true
+                && !arr(&definition["source"]["mechanicIds"]).is_empty()
+            {
+                add_source(
+                    &definition["models"][rank.to_string()],
+                    &definition["source"],
+                    format!("unsupported:{category}:equipment:{id}"),
+                    &mut mechanics,
+                    &mut sources,
+                    &mut mechanic_ids,
+                );
+            }
         }
     }
     for (id, (count, pos)) in &sets {

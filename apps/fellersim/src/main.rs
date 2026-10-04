@@ -5,7 +5,7 @@ mod input;
 mod orchestration;
 mod output;
 
-use clap::{Parser, error::ErrorKind};
+use clap::{FromArgMatches, error::ErrorKind};
 use command::Cli;
 use output::{Failure, Outcome};
 #[tokio::main]
@@ -18,7 +18,10 @@ async fn main() -> std::process::ExitCode {
         .find(|arg| !arg.to_string_lossy().starts_with('-'))
         .map(|arg| arg.to_string_lossy().into_owned())
         .unwrap_or_else(|| "fellersim".into());
-    let cli = match Cli::try_parse_from(&args) {
+    let cli = match Cli::command_with_help()
+        .try_get_matches_from(&args)
+        .and_then(|matches| Cli::from_arg_matches(&matches))
+    {
         Ok(cli) => cli,
         Err(e) => {
             let (command, outcome) = match e.kind() {

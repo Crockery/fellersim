@@ -203,7 +203,7 @@
   },
   "iterations": 100,
   "meanDps": 300.2070333333333,
-  "modelVersion": "rime-stationary-dummies-v31",
+  "modelVersion": "rime-stationary-dummies-v35",
   "primaryTargetDps": 153.43853333333334,
   "procs": [
     {

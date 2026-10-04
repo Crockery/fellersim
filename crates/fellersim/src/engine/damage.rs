@@ -1587,7 +1587,7 @@ impl Iteration<'_> {
                 }
             }
         }
-        self.shared.spirit = (self.shared.spirit + training_dummy_damage_spirit(damage))
+        self.shared.spirit = (self.shared.spirit + stationary_dummy_damage_spirit(damage))
             .min(self.profile.max_spirit);
         if event.proc_eligible {
             self.try_basic_to_aoe(&event, damage);
@@ -1787,15 +1787,39 @@ impl Iteration<'_> {
     }
 }
 
-// Build 25485623: TargetDummy BaseHealth=1337, Stamina=0, instance and
-// difficulty health multipliers=1, SpiritPointValue=3. The passive grants
-// min(abs(TotalHealthChange), MaxHealth) / MaxHealth * SpiritPointValue * 0.25.
-// These are fixed encounter semantics, not a hero stat or a configurable
-// damage coefficient. See docs/static-mechanics-analysis.md for native proof.
-fn training_dummy_damage_spirit(damage: f64) -> f64 {
+// Preserve the game's damage fraction formula on an immortal target, using
+// the fixed boss-health benchmark rather than the in-game training dummy.
+fn stationary_dummy_damage_spirit(damage: f64) -> f64 {
+    damage_spirit_grant(
+        damage,
+        STATIONARY_DUMMY_MAX_HEALTH,
+        STATIONARY_DUMMY_SPIRIT_VALUE,
+    )
+}
+
+pub(crate) fn damage_spirit_grant(damage: f64, max_health: f64, spirit_value: f64) -> f64 {
     let resolved_damage = damage as f32;
-    let fraction = f64::from(resolved_damage.max(0.0)).min(1337.0) / 1337.0;
+    let fraction = f64::from(resolved_damage.max(0.0)).min(max_health) / max_health;
     // Kismet promotes the captured attributes to double, then narrows the
     // set-by-caller value to float before adding it to SpiritPoints.
-    f64::from((fraction * 3.0 * 0.25) as f32)
+    f64::from((fraction * spirit_value * 0.25) as f32)
+}
+
+#[cfg(test)]
+mod spirit_grant_tests {
+    #[test]
+    fn damage_spirit_matches_shared_audit_vectors() {
+        let vectors: serde_json::Value =
+            serde_json::from_str(include_str!("../tests/fixtures/spirit-grants.json")).unwrap();
+        for vector in vectors.as_array().unwrap() {
+            assert_eq!(
+                super::damage_spirit_grant(
+                    vector["damage"].as_f64().unwrap(),
+                    vector["maxHealth"].as_f64().unwrap(),
+                    vector["spiritValue"].as_f64().unwrap(),
+                ),
+                vector["expected"].as_f64().unwrap()
+            );
+        }
+    }
 }

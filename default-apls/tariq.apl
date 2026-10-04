@@ -3,8 +3,8 @@ actions=/weapon_shadow_mark
 actions+=/weapon_cleave_charge,if=cooldown.thunder_call.ready|buff.thunder_call.up|buff.raging_tempest.up
 actions+=/weapon_instant_aoe,if=cooldown.thunder_call.ready|buff.thunder_call.up|buff.raging_tempest.up
 
-# Alternate Thunder Call and Raging Tempest for sustained lightning windows.
-actions+=/raging_tempest,if=resource.spirit.current=resource.spirit.max&!buff.thunder_call.up
+# Alternate lightning windows, spending Spirit as soon as Raging Tempest is affordable.
+actions+=/raging_tempest,if=!buff.thunder_call.up
 actions+=/thunder_call,if=!buff.raging_tempest.up
 
 # Earthbreaker contributes direct area damage after the lightning window is active.

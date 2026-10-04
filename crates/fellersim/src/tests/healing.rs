@@ -264,7 +264,7 @@ fn usurper_healing_branch_follows_damage_and_failed_initial_proc_cannot_heal() {
         let damage = iteration.common.result.targets[0];
         assert_eq!(
             iteration.shared.spirit,
-            f64::from((f64::from(damage as f32).min(1337.0) / 1337.0 * 0.75) as f32)
+            f64::from((f64::from(damage as f32).min(6_637_912.0) / 6_637_912.0 * 11.25) as f32)
         );
     }
     assert!(damage_only > 0 && damage_and_heal > 0);
@@ -419,7 +419,7 @@ fn winters_blessing_batches_direct_damage_without_haste_and_flushes_on_expiry() 
     assert_eq!(iteration.hero.rime().blessing_heal_pending, 0.0);
     assert!(!iteration.hero.rime().blessing_heal_scheduled);
     assert_eq!(iteration.common.result.targets, damage);
-    assert_eq!(iteration.shared.spirit, spirit);
+    assert_eq!(iteration.shared.spirit, spirit + 1.0); // Native regen at 3 seconds.
     assert_eq!(
         iteration.shared.proc_per_minute_states[HEAL_STREAM].last_proc_seconds,
         until as f32 / 1_000.0
@@ -774,7 +774,7 @@ fn unyielding_vitality_overheals_without_critical_events_unless_diamond_procs() 
                 iteration.process_events_through(4_000);
                 assert_eq!(iteration.test_uptime(&format!("proc:{source}")), 2.0);
                 assert_eq!(iteration.common.result.targets, vec![0.0]);
-                assert_eq!(iteration.shared.spirit, 0.0);
+                assert_eq!(iteration.shared.spirit, 1.0); // Native regen; healing grants none.
             }
         }
     }

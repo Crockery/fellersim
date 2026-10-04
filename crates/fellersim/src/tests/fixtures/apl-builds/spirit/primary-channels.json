@@ -1,0 +1,316 @@
+{
+  "source": {
+    "reportCode": "TXhtdHq6zy7BRLn4",
+    "fightId": 23,
+    "actorId": 2
+  },
+  "note": "Cast/channel records, first and last damage records per channel, adjacent Spirit snapshots, and starting-Spirit talent/blessing selections. Timestamps relative to fight start; not a complete encounter capture or loadout.",
+  "durationMs": 674460,
+  "spiritAbilityId": 1270,
+  "initial": {
+    "timestamp": 200,
+    "amount": 62,
+    "max": 130
+  },
+  "events": [
+    {
+      "timestamp": 49291,
+      "type": "cast",
+      "sourceID": 2,
+      "targetID": -1,
+      "abilityGameID": 1270,
+      "activation": true
+    },
+    {
+      "timestamp": 49422,
+      "type": "cast",
+      "sourceID": 2,
+      "targetID": -1,
+      "abilityGameID": 1270,
+      "fake": true,
+      "activation": true
+    },
+    {
+      "timestamp": 49422,
+      "type": "begincast",
+      "sourceID": 2,
+      "targetID": -1,
+      "abilityGameID": 1270
+    },
+    {
+      "timestamp": 50294,
+      "type": "cast",
+      "sourceID": 2,
+      "targetID": -1,
+      "abilityGameID": 1270
+    },
+    {
+      "timestamp": 50295,
+      "type": "beginchannel",
+      "sourceID": 2,
+      "targetID": -1,
+      "abilityGameID": 1270
+    },
+    {
+      "timestamp": 50327,
+      "type": "damage",
+      "sourceID": 2,
+      "targetID": 8,
+      "targetInstance": 2,
+      "abilityGameID": 1270,
+      "amount": 1541
+    },
+    {
+      "timestamp": 52804,
+      "type": "damage",
+      "sourceID": 2,
+      "targetID": 6,
+      "targetInstance": 1,
+      "abilityGameID": 1270,
+      "amount": 2779
+    },
+    {
+      "timestamp": 393845,
+      "type": "cast",
+      "sourceID": 2,
+      "targetID": -1,
+      "abilityGameID": 1270,
+      "activation": true
+    },
+    {
+      "timestamp": 393945,
+      "type": "cast",
+      "sourceID": 2,
+      "targetID": -1,
+      "abilityGameID": 1270,
+      "activation": true
+    },
+    {
+      "timestamp": 394075,
+      "type": "cast",
+      "sourceID": 2,
+      "targetID": -1,
+      "abilityGameID": 1270,
+      "fake": true,
+      "activation": true
+    },
+    {
+      "timestamp": 394075,
+      "type": "begincast",
+      "sourceID": 2,
+      "targetID": -1,
+      "abilityGameID": 1270
+    },
+    {
+      "timestamp": 395081,
+      "type": "cast",
+      "sourceID": 2,
+      "targetID": -1,
+      "abilityGameID": 1270
+    },
+    {
+      "timestamp": 395081,
+      "type": "beginchannel",
+      "sourceID": 2,
+      "targetID": -1,
+      "abilityGameID": 1270
+    },
+    {
+      "timestamp": 395116,
+      "type": "damage",
+      "sourceID": 2,
+      "targetID": 16,
+      "abilityGameID": 1270,
+      "amount": 3300
+    },
+    {
+      "timestamp": 397589,
+      "type": "damage",
+      "sourceID": 2,
+      "targetID": 15,
+      "abilityGameID": 1270,
+      "amount": 2060
+    },
+    {
+      "timestamp": 497945,
+      "type": "cast",
+      "sourceID": 2,
+      "targetID": -1,
+      "abilityGameID": 1270,
+      "activation": true
+    },
+    {
+      "timestamp": 498076,
+      "type": "cast",
+      "sourceID": 2,
+      "targetID": -1,
+      "abilityGameID": 1270,
+      "fake": true,
+      "activation": true
+    },
+    {
+      "timestamp": 498076,
+      "type": "begincast",
+      "sourceID": 2,
+      "targetID": -1,
+      "abilityGameID": 1270
+    },
+    {
+      "timestamp": 498952,
+      "type": "cast",
+      "sourceID": 2,
+      "targetID": -1,
+      "abilityGameID": 1270
+    },
+    {
+      "timestamp": 498953,
+      "type": "beginchannel",
+      "sourceID": 2,
+      "targetID": -1,
+      "abilityGameID": 1270
+    },
+    {
+      "timestamp": 498985,
+      "type": "damage",
+      "sourceID": 2,
+      "targetID": 16,
+      "abilityGameID": 1270,
+      "amount": 4591
+    },
+    {
+      "timestamp": 501456,
+      "type": "damage",
+      "sourceID": 2,
+      "targetID": 16,
+      "abilityGameID": 1270,
+      "amount": 4498
+    },
+    {
+      "timestamp": 603253,
+      "type": "cast",
+      "sourceID": 2,
+      "targetID": -1,
+      "abilityGameID": 1270,
+      "fake": true,
+      "activation": true
+    },
+    {
+      "timestamp": 603253,
+      "type": "begincast",
+      "sourceID": 2,
+      "targetID": -1,
+      "abilityGameID": 1270
+    },
+    {
+      "timestamp": 604290,
+      "type": "cast",
+      "sourceID": 2,
+      "targetID": -1,
+      "abilityGameID": 1270
+    },
+    {
+      "timestamp": 604291,
+      "type": "beginchannel",
+      "sourceID": 2,
+      "targetID": -1,
+      "abilityGameID": 1270
+    },
+    {
+      "timestamp": 604325,
+      "type": "damage",
+      "sourceID": 2,
+      "targetID": 16,
+      "abilityGameID": 1270,
+      "amount": 8128
+    },
+    {
+      "timestamp": 606795,
+      "type": "damage",
+      "sourceID": 2,
+      "targetID": 16,
+      "abilityGameID": 1270,
+      "amount": 4425
+    }
+  ],
+  "windows": [
+    {
+      "commitTime": 50294,
+      "before": {
+        "timestamp": 50293,
+        "amount": 93.08,
+        "max": 130
+      },
+      "after": {
+        "timestamp": 50327,
+        "amount": 8.09,
+        "max": 130
+      }
+    },
+    {
+      "commitTime": 395081,
+      "before": {
+        "timestamp": 395079,
+        "amount": 130,
+        "max": 130
+      },
+      "after": {
+        "timestamp": 395116,
+        "amount": 45,
+        "max": 130
+      }
+    },
+    {
+      "commitTime": 498952,
+      "before": {
+        "timestamp": 498751,
+        "amount": 123.04,
+        "max": 130
+      },
+      "after": {
+        "timestamp": 498985,
+        "amount": 38.04,
+        "max": 130
+      }
+    },
+    {
+      "commitTime": 604290,
+      "before": {
+        "timestamp": 604124,
+        "amount": 110.38,
+        "max": 130
+      },
+      "after": {
+        "timestamp": 604324,
+        "amount": 25.39,
+        "max": 130
+      }
+    }
+  ],
+  "startingLoadout": {
+    "heroId": "firemage",
+    "selectedTalentIds": [
+      "firemage-talent-id-talent15"
+    ],
+    "positions": [
+      {
+        "positionId": "necklace",
+        "item": {
+          "itemId": "neck-setc-a-crit-haste",
+          "itemLevel": 315,
+          "rarity": "Heroic",
+          "appliedTempers": 8,
+          "rolledModifiers": [],
+          "gems": [],
+          "traitTree": null,
+          "blessings": [
+            {
+              "slotId": "random:0:AbilityRank",
+              "blessingId": "DynamicItemAbilityRank.13",
+              "rank": 1
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

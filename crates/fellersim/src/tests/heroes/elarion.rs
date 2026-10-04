@@ -303,7 +303,13 @@ fn elarion_lunarlight_salvo_applies_immediately_and_uses_the_cooked_random_strea
             .controlled_random_states
             .contains_key("RandomStream.Bowguy.LunarlightSalvo")
     );
-    assert!(iteration.common.queue.is_empty());
+    assert!(
+        iteration
+            .common
+            .queue
+            .iter()
+            .all(|event| matches!(event.0.kind, EventKind::Core(CoreEvent::PassiveSpiritRegen)))
+    );
     iteration.process_events_through(350);
     assert_eq!(iteration.ability_totals("test:lunarlight-salvo").hits, 1);
     assert_eq!(iteration.test_proc_count("test:lunarlight-salvo"), 1);
@@ -783,7 +789,12 @@ fn elarion_eruption_precedes_salvo_and_scales_only_secondary_target_count() {
         assert_eq!(actual.hero.elarion().mark_stacks, vec![0, 4, 0]);
         assert_eq!(actual.test_proc_count("test:lunarlight-salvo"), 1);
         assert_eq!(actual.test_proc_count("test:lunarlight-eruption"), 1);
-        assert!(actual.common.queue.is_empty());
+        assert!(
+            actual.common.queue.iter().all(|event| matches!(
+                event.0.kind,
+                EventKind::Core(CoreEvent::PassiveSpiritRegen)
+            ))
+        );
     }
 }
 
@@ -852,7 +863,7 @@ fn elarion_both_lunarlight_specs_snapshot_before_eruption_activates_first_strike
     iteration.try_elarion_mark_proc(source, 1, false, 100.0, DamageContext::NONE);
     assert_eq!(iteration.common.result.targets, vec![100.0, 100.0, 100.0]);
     assert_eq!(iteration.effective_expertise(), 0.5);
-    assert!((iteration.shared.spirit - 300.0 / 1337.0 * 0.75).abs() < 1e-7);
+    assert!((iteration.shared.spirit - 300.0 / 6_637_912.0 * 11.25).abs() < 1e-7);
     assert_eq!(iteration.test_proc_count("test:lunarlight-salvo"), 1);
 }
 
@@ -1498,4 +1509,130 @@ fn elarion_skylit_grace_does_not_require_grace_and_any_actor_end_removes_it() {
         iteration.cooldown_recovery_rate(DpsAbilityKind::SkystridersGrace),
         1.0
     );
+}
+
+#[test]
+fn default_elarion_spends_actual_spirit_cost_but_preserves_active_horizon() {
+    let document: serde_json::Value = serde_json::from_str(include_str!(
+        "../fixtures/apl-builds/elarion/character.json"
+    ))
+    .unwrap();
+    let mut build: crate::preparation::CharacterBuild =
+        serde_json::from_value(document["build"].clone()).unwrap();
+    // The shared default must skip unequipped weapon actions.
+    build
+        .positions
+        .iter_mut()
+        .find(|p| p.position_id == "weapon")
+        .unwrap()
+        .item = None;
+    let (profile, _) = crate::preparation::prepare_character(&build, 1).unwrap();
+    let apl = crate::parse_apl(&shipped_apl_source("elarion")).unwrap();
+    for cost in [85.0, 100.0] {
+        let mut profile = profile.clone();
+        profile
+            .abilities
+            .iter_mut()
+            .find(|a| a.kind == DpsAbilityKind::EventHorizon)
+            .unwrap()
+            .spirit_cost = cost;
+        let mut iteration = Iteration::new(&profile, &apl, 1, 51);
+        iteration.common.cooldowns.insert(
+            DpsAbilityKind::SkystridersGrace,
+            CooldownState {
+                remaining_ms: 30_000.0,
+                used_charges: 1,
+            },
+        );
+        let horizon = iteration.common.abilities_by_kind[&DpsAbilityKind::EventHorizon];
+        iteration.shared.spirit = cost - 0.01;
+        assert_ne!(iteration.choose_action(), Some(horizon));
+        iteration.shared.spirit = cost;
+        assert!(cost < profile.max_spirit);
+        assert_eq!(iteration.choose_action(), Some(horizon));
+        iteration.hero.elarion_mut().event_horizon_until = 1_000;
+        assert_ne!(iteration.choose_action(), Some(horizon));
+        iteration.common.now_ms = 1_000;
+        assert_eq!(iteration.choose_action(), Some(horizon));
+    }
+}
+
+fn ranked_elarion_profile(highwind: bool) -> NormalizedDpsProfile {
+    let source = if highwind {
+        include_str!("../fixtures/apl-builds/elarion/variants/highwind.json")
+    } else {
+        include_str!("../fixtures/apl-builds/elarion/character.json")
+    };
+    let document: serde_json::Value = serde_json::from_str(source).unwrap();
+    let build = serde_json::from_value(document["build"].clone()).unwrap();
+    crate::preparation::prepare_character(&build, 1).unwrap().0
+}
+
+fn elarion_test_cooldown(iteration: &mut Iteration<'_>, kind: DpsAbilityKind) {
+    iteration.common.cooldowns.insert(
+        kind,
+        CooldownState {
+            remaining_ms: 30_000.0,
+            used_charges: iteration.ability(kind).unwrap().maximum_charges,
+        },
+    );
+}
+
+#[test]
+fn default_elarion_uses_mark_for_resurgent_winds_without_waiting_for_barrage() {
+    let apl = crate::parse_apl(&shipped_apl_source("elarion")).unwrap();
+    for resurgent in [false, true] {
+        let profile = ranked_elarion_profile(resurgent);
+        let mut iteration = Iteration::new(&profile, &apl, 1, 52);
+        iteration.shared.spirit = 0.0;
+        for kind in [
+            DpsAbilityKind::SkystridersGrace,
+            DpsAbilityKind::SkystridersSupremacy,
+            DpsAbilityKind::HeartseekerBarrage,
+        ] {
+            elarion_test_cooldown(&mut iteration, kind);
+        }
+        let mark = iteration.common.abilities_by_kind[&DpsAbilityKind::LunarlightMark];
+        assert_eq!(iteration.choose_action() == Some(mark), resurgent);
+        iteration
+            .common
+            .cooldowns
+            .remove(&DpsAbilityKind::HeartseekerBarrage);
+        assert_eq!(iteration.choose_action(), Some(mark));
+    }
+}
+
+#[test]
+fn default_elarion_resets_committed_cooldowns_early_only_outside_crescendo_on_one_target() {
+    let apl = crate::parse_apl(&shipped_apl_source("elarion")).unwrap();
+    for crescendo in [false, true] {
+        let profile = ranked_elarion_profile(crescendo);
+        for targets in [1, 3, 5] {
+            let mut iteration = Iteration::new(&profile, &apl, targets, 53);
+            iteration.shared.spirit = 0.0;
+            for kind in [
+                DpsAbilityKind::SkystridersGrace,
+                DpsAbilityKind::SkystridersSupremacy,
+                DpsAbilityKind::LunarlightMark,
+                DpsAbilityKind::StarfallVolley,
+            ] {
+                elarion_test_cooldown(&mut iteration, kind);
+            }
+            let chrono = iteration.common.abilities_by_kind[&DpsAbilityKind::WeaponArcaneChannel];
+            let highwind = iteration.common.abilities_by_kind[&DpsAbilityKind::HighwindArrow];
+            assert_eq!(
+                iteration.choose_action(),
+                Some(if targets == 1 && !crescendo {
+                    chrono
+                } else {
+                    highwind
+                })
+            );
+            iteration
+                .common
+                .cooldowns
+                .remove(&DpsAbilityKind::StarfallVolley);
+            assert_ne!(iteration.choose_action(), Some(chrono));
+        }
+    }
 }

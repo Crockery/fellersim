@@ -1732,3 +1732,18 @@ fn assert_full_result_fixture(name: &str, request: SimulationRequest, expected: 
     let actual = serde_json::to_string_pretty(&actual).expect("fixture result formats");
     assert_eq!(actual, expected.trim(), "{name} full result changed");
 }
+
+pub(crate) fn shipped_apl_source(hero: &str) -> String {
+    let workspace = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap();
+    // The public distribution puts editable defaults at its root.
+    let path = ["apps/fellersim/default-apls", "default-apls"]
+        .into_iter()
+        .map(|directory| workspace.join(directory).join(format!("{hero}.apl")))
+        .find(|path| path.is_file())
+        .expect("shipped default APL in monorepo or public workspace");
+    std::fs::read_to_string(path).expect("read shipped default APL")
+}

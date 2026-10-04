@@ -191,10 +191,10 @@ fn damage_spirit_gain_uses_dummy_health_and_is_independent_of_spirit_stat() {
         let mut iteration = Iteration::new(&profile, &apl, 1, 6);
         let hit = compiled_ability(&profile.abilities[0]);
         iteration.damage_hit(&hit, 100.0, 0.0, false, 0, DamageContext::NONE);
-        let expected = f64::from((100.0_f64 / 1337.0 * 0.75) as f32);
+        let expected = f64::from((100.0_f64 / 6_637_912.0 * 11.25) as f32);
         assert_eq!(iteration.shared.spirit, expected, "Spirit stat {spirit}");
 
-        iteration.shared.spirit = profile.max_spirit - 0.01;
+        iteration.shared.spirit = profile.max_spirit - 0.00001;
         iteration.damage_hit(&hit, 100.0, 0.0, false, 0, DamageContext::NONE);
         assert_eq!(iteration.shared.spirit, profile.max_spirit);
     }
@@ -214,24 +214,24 @@ fn damage_spirit_caps_each_target_hit_including_proc_and_periodic_damage() {
         iteration.damage_unscaled_key(
             None,
             source,
-            10_000.0,
+            10_000_000.0,
             target,
             provenance,
             DamageContext::NONE,
         );
-        assert_eq!(iteration.shared.spirit, f64::from(target + 1) * 0.75);
+        assert_eq!(iteration.shared.spirit, f64::from(target + 1) * 11.25);
     }
     // An immortal dummy's minimum health does not cap TotalHealthChange;
     // repeated lethal-sized hits continue granting the per-hit maximum.
     iteration.damage_unscaled_key(
         None,
         source,
-        1337.0,
+        6_637_912.0,
         0,
         DamageProvenance::Proc,
         DamageContext::NONE,
     );
-    assert_eq!(iteration.shared.spirit, 3.0);
+    assert_eq!(iteration.shared.spirit, 45.0);
     iteration.damage_unscaled_key(
         None,
         source,
@@ -240,7 +240,7 @@ fn damage_spirit_caps_each_target_hit_including_proc_and_periodic_damage() {
         DamageProvenance::Proc,
         DamageContext::NONE,
     );
-    assert_eq!(iteration.shared.spirit, 3.0);
+    assert_eq!(iteration.shared.spirit, 45.0);
 }
 
 #[test]
@@ -1414,5 +1414,275 @@ fn availability_first_apl_matches_reference_with_free_casts_and_failed_condition
                 iteration.choose_action_with_trace(None)
             );
         }
+    }
+}
+
+#[test]
+fn all_heroes_regenerate_spirit_on_a_fixed_timer_without_damage_or_refund_procs() {
+    for mut profile in [
+        profile(vec![ability(DpsAbilityKind::Incinerate, 1.0)]),
+        rime_profile(),
+        tariq_profile(),
+        elarion_profile([elarion_ability(DpsAbilityKind::EventHorizon)]),
+        mara_profile(),
+        gunde_profile(),
+    ] {
+        profile.max_spirit = 130.0;
+        profile.spirit = 2.0; // Secondary Spirit does not multiply the grant.
+        profile.haste = 3.0; // Haste does not accelerate the native timer.
+        let apl = apl([]);
+        let mut iteration = Iteration::new(&profile, &apl, 1, 37);
+        iteration.shared.spirit = 0.0;
+        iteration.process_events_through(2_999);
+        assert_eq!(iteration.shared.spirit, 0.0, "{}", profile.hero_id);
+        iteration.process_events_through(3_000);
+        assert_eq!(iteration.shared.spirit, 1.0, "{}", profile.hero_id);
+        iteration.process_events_through(9_000);
+        assert_eq!(iteration.shared.spirit, 3.0, "{}", profile.hero_id);
+        assert_eq!(iteration.common.result.damage, 0.0);
+        assert_eq!(iteration.test_proc_count("spirit-refund"), 0);
+        iteration.shared.spirit = 129.75;
+        iteration.process_events_through(12_000);
+        assert_eq!(iteration.shared.spirit, 130.0);
+        iteration.process_events_through(15_000);
+        iteration.shared.spirit = 45.0; // Spending does not reset tick phase.
+        iteration.process_events_through(17_999);
+        assert_eq!(iteration.shared.spirit, 45.0);
+        iteration.process_events_through(18_000);
+        assert_eq!(iteration.shared.spirit, 46.0);
+    }
+}
+
+#[test]
+fn all_heroes_use_the_fixed_boss_health_benchmark_for_damage_spirit() {
+    let reference: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/dummy-target.json")).unwrap();
+    assert_eq!(
+        STATIONARY_DUMMY_MAX_HEALTH,
+        reference["maxHealth"].as_f64().unwrap()
+    );
+    assert_eq!(
+        STATIONARY_DUMMY_SPIRIT_VALUE,
+        reference["spiritPointValue"].as_f64().unwrap()
+    );
+    for profile in [
+        profile(vec![ability(DpsAbilityKind::InfernalWave, 1.0)]),
+        rime_profile(),
+        tariq_profile(),
+        elarion_profile([elarion_ability(DpsAbilityKind::EventHorizon)]),
+        mara_profile(),
+        gunde_profile(),
+    ] {
+        let apl = apl([]);
+        let mut iteration = Iteration::new(&profile, &apl, 1, 37);
+        iteration.shared.spirit = 0.0;
+        let source = iteration.test_damage_source("benchmark-hit");
+        iteration.damage_unscaled_key(
+            None,
+            source,
+            10_000.0,
+            0,
+            DamageProvenance::Direct,
+            DamageContext::NONE,
+        );
+        // Shared reference vector: no party income or dungeon modifiers.
+        assert_eq!(
+            iteration.shared.spirit, 0.016948100179433823,
+            "{}",
+            profile.hero_id
+        );
+        assert_eq!(iteration.common.result.damage, 10_000.0);
+    }
+}
+
+#[test]
+fn all_heroes_apply_ranked_visions_once_per_commit_for_each_weapon() {
+    for base in [
+        profile(vec![ability(DpsAbilityKind::Incinerate, 1.0)]),
+        rime_profile(),
+        tariq_profile(),
+        elarion_profile([elarion_ability(DpsAbilityKind::EventHorizon)]),
+        mara_profile(),
+        gunde_profile(),
+    ] {
+        let spirit = base
+            .abilities
+            .iter()
+            .find(|a| ability_category(a.kind) == AbilityCategory::Spirit)
+            .unwrap()
+            .clone();
+        for kind in [
+            DpsAbilityKind::WeaponArcaneChannel,
+            DpsAbilityKind::WeaponFrostVolley,
+            DpsAbilityKind::WeaponChainLightning,
+            DpsAbilityKind::WeaponShadowMark,
+        ] {
+            for rank in 1..=4 {
+                let mut profile = base.clone();
+                let mut weapon = ability(kind, 0.0);
+                weapon.cooldown_ms = 90_000;
+                weapon
+                    .mechanic_parameters
+                    .insert("defaultCooldownMs".into(), 180_000.0);
+                profile.abilities.push(weapon.clone());
+                profile.max_spirit = 130.0;
+                profile.mechanics.push(ardeos_mechanic(
+                    "ItemTrait.ID.WeaponAndSpiritPoints",
+                    [
+                        ("spiritCooldownMultiplier", 2.5),
+                        ("spiritCooldownDivider", 30.0),
+                        ("weaponCooldownReductionFraction", rank as f64 * 0.25),
+                    ],
+                ));
+                let apl = apl([]);
+                let mut iteration = Iteration::new(&profile, &apl, 1, 37);
+                iteration.shared.spirit = 62.0;
+                iteration.trigger_dynamic_on_cast(&compiled_ability(&weapon), DamageContext::NONE);
+                assert_eq!(
+                    iteration.shared.spirit, 77.0,
+                    "{} rank {rank}",
+                    profile.hero_id
+                );
+                iteration.common.cooldowns.insert(
+                    kind,
+                    CooldownState {
+                        used_charges: 1,
+                        remaining_ms: 80_000.0,
+                    },
+                );
+                iteration.trigger_dynamic_on_cast(&compiled_ability(&spirit), DamageContext::NONE);
+                assert_eq!(
+                    iteration
+                        .common
+                        .cooldowns
+                        .get(&kind)
+                        .map_or(0.0, |c| c.remaining_ms),
+                    80_000.0 * (1.0 - rank as f64 * 0.25)
+                );
+                iteration.shared.spirit = 125.0;
+                iteration.trigger_dynamic_on_cast(&compiled_ability(&weapon), DamageContext::NONE);
+                assert_eq!(iteration.shared.spirit, 130.0);
+            }
+        }
+        // A Spirit commit with the trait but no equipped weapon is harmless.
+        let mut profile = base.clone();
+        profile.mechanics.push(ardeos_mechanic(
+            "ItemTrait.ID.WeaponAndSpiritPoints",
+            [
+                ("spiritCooldownMultiplier", 2.5),
+                ("spiritCooldownDivider", 30.0),
+                ("weaponCooldownReductionFraction", 0.75),
+            ],
+        ));
+        let apl = apl([]);
+        let mut iteration = Iteration::new(&profile, &apl, 1, 37);
+        iteration.shared.spirit = 62.0;
+        iteration.trigger_dynamic_on_cast(&compiled_ability(&spirit), DamageContext::NONE);
+        assert_eq!(iteration.shared.spirit, 62.0);
+    }
+}
+
+#[test]
+fn prepared_equipment_has_one_ranked_counter_and_one_starting_grant_for_all_heroes() {
+    use crate::preparation::{empty_character, prepare_character};
+    for hero in ["firemage", "rime", "ink", "bowguy", "mara", "gunde"] {
+        let mut build = empty_character(hero).unwrap();
+        for (pos, item_id) in [
+            ("ring-1", "ring-sete-c-haste-spirit"),
+            ("ring-2", "ring-setb-c-haste-expertise"),
+            ("feet", "feet-a-crit"),
+            ("trinket-2", "relic-c-crit-spirit-polymorph"),
+        ] {
+            let ring = pos.starts_with("ring-");
+            let item = serde_json::json!({
+                "itemId": item_id, "itemLevel": 315, "rarity": "Heroic", "appliedTempers": 0,
+                "rolledModifiers": if ring { (0..2).map(|i| serde_json::json!({
+                    "slotId": format!("random:{i}:ItemTrait"), "kind": "item-trait",
+                    "choiceId": "ItemTrait.ID.WeaponCritChanceCooldownReduction"
+                })).collect::<Vec<_>>() } else { vec![] },
+                "blessings": if ring {vec![]} else {vec![serde_json::json!({
+                    "slotId": if pos == "feet" {"random:2:AbilityRank"} else {"random:0:AbilityRank"},
+                    "blessingId": "DynamicItemAbilityRank.13", "rank": 1
+                })]},
+                "gems": [], "traitTree": null
+            });
+            build
+                .positions
+                .iter_mut()
+                .find(|p| p.position_id == pos)
+                .unwrap()
+                .item = Some(serde_json::from_value(item).unwrap());
+        }
+        let (mut prepared, _) = prepare_character(&build, 1).unwrap();
+        let brave: Vec<_> = prepared
+            .mechanics
+            .iter()
+            .filter(|m| m.source_id == "ItemTrait.ID.WeaponCritChanceCooldownReduction")
+            .collect();
+        assert_eq!(brave.len(), 1);
+        assert_eq!(brave[0].parameters["weaponCriticalStrikeBonus"], 0.32);
+        assert_eq!(brave[0].parameters["weaponCooldownReductionPerCrit"], 0.3);
+        let mut weapon = ability(DpsAbilityKind::WeaponFrostVolley, 0.0);
+        weapon.cooldown_ms = 10_000;
+        prepared.abilities.push(weapon.clone());
+        prepared.cooldown_recovery = 1.0;
+        prepared.spirit = 0.0;
+        let apl = apl([]);
+        let mut iteration = Iteration::new(&prepared, &apl, 1, 18);
+        assert_eq!(
+            iteration.shared.spirit, 20.0,
+            "{hero}: one rank-two Herald grant"
+        );
+        iteration.common.cooldowns.insert(
+            weapon.kind,
+            CooldownState {
+                used_charges: 1,
+                remaining_ms: 10_000.0,
+            },
+        );
+        iteration.trigger_dynamic_on_cast(&compiled_ability(&weapon), DamageContext::NONE);
+        iteration.trigger_weapon_critical_cooldown_reduction(weapon.kind);
+        iteration.trigger_weapon_critical_cooldown_reduction(weapon.kind);
+        iteration.process_events_through(333);
+        assert_eq!(
+            iteration.common.cooldowns[&weapon.kind].remaining_ms,
+            6_667.0
+        );
+        assert_eq!(
+            iteration.test_uptime(
+                "proc:unsupported:traits:equipment:ItemTrait.ID.WeaponCritChanceCooldownReduction"
+            ),
+            1.0
+        );
+    }
+}
+
+#[test]
+fn logged_starting_loadouts_grant_62_and_70_spirit() {
+    use crate::preparation::{empty_character, prepare_character};
+    for source in [
+        include_str!("fixtures/apl-builds/spirit/primary-channels.json"),
+        include_str!("fixtures/apl-builds/spirit/secondary-channels.json"),
+    ] {
+        let fixture: serde_json::Value = serde_json::from_str(source).unwrap();
+        let selected = &fixture["startingLoadout"];
+        let mut build = empty_character(selected["heroId"].as_str().unwrap()).unwrap();
+        build.selected_talent_ids =
+            serde_json::from_value(selected["selectedTalentIds"].clone()).unwrap();
+        for position in selected["positions"].as_array().unwrap() {
+            let p = build
+                .positions
+                .iter_mut()
+                .find(|p| p.position_id == position["positionId"].as_str().unwrap())
+                .unwrap();
+            p.item = serde_json::from_value(position["item"].clone()).unwrap();
+        }
+        let (profile, _) = prepare_character(&build, 1).unwrap();
+        let apl = apl([]);
+        let iteration = Iteration::new(&profile, &apl, 1, 37);
+        assert_eq!(
+            iteration.shared.spirit,
+            fixture["initial"]["amount"].as_f64().unwrap()
+        );
     }
 }
