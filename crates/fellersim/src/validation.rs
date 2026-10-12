@@ -15,7 +15,7 @@ const MAX_APL_CONDITION_NODES: usize = 1_024;
 const MAX_APL_DEPTH: usize = 64;
 const MAX_APL_COMMENTS: usize = 1_024;
 const MAX_PARAMETERS_PER_MODEL: usize = 64;
-const MAX_DYNAMIC_PARAMETER_ABS: f64 = 1_000_000.0;
+pub(crate) const MAX_DYNAMIC_PARAMETER_ABS: f64 = 1_000_000.0;
 const MAX_MODEL_TIME_MS: u64 = 20 * 60 * 1_000;
 const MAX_DIRECT_HITS: u32 = 256;
 const MAX_SCHEDULED_TICKS: u64 = 256;
@@ -300,6 +300,14 @@ pub(crate) fn validate(request: &SimulationRequest) -> Result<u64, SimulationErr
         return Err(SimulationError::new(
             SimulationErrorCode::InvalidBuild,
             "request does not match the current Fellersim contract",
+        ));
+    }
+    if !(1000..=1_200_000).contains(&request.scenario.duration_ms)
+        || !request.scenario.duration_ms.is_multiple_of(1000)
+    {
+        return Err(SimulationError::new(
+            SimulationErrorCode::InvalidBuild,
+            "Duration must be 1–1200 whole seconds.",
         ));
     }
     if request.scenario.schema_version != STATIONARY_DUMMY_SCENARIO_SCHEMA_VERSION

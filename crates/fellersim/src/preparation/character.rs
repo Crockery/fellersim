@@ -93,13 +93,6 @@ pub(super) fn diagnose(build: &CharacterBuild) -> Vec<Diagnostic> {
         );
         return issues;
     }
-    if build.talent_points > 14 {
-        issue!(
-            "talent-budget",
-            "/talentPoints",
-            "Talent budget must be at most 14."
-        );
-    }
     if build.selected_talent_ids.len() > 32
         || build.positions.len() != arr(&data["positions"]).len()
         || build.disabled_conditional_contribution_ids.len() > 256
@@ -111,27 +104,11 @@ pub(super) fn diagnose(build: &CharacterBuild) -> Vec<Diagnostic> {
         );
         return issues;
     }
-    let mut selected = BTreeSet::new();
-    let mut points = 0.0;
-    for (i, id) in build.selected_talent_ids.iter().enumerate() {
-        let talent = &hero["talents"][id];
-        if talent.is_null() || !selected.insert(id) {
-            issue!(
-                "unknown-or-duplicate-talent",
-                format!("/selectedTalentIds/{i}"),
-                format!("Unknown or duplicate talent: {id}")
-            );
-        } else {
-            points += num(talent, "pointCost");
-        }
-    }
-    if points > build.talent_points as f64 {
-        issue!(
-            "talent-budget-exceeded",
-            "/selectedTalentIds",
-            "Selected talents exceed the talent point budget."
-        );
-    }
+    issues.extend(diagnose_talents(
+        &build.hero_id,
+        build.talent_points,
+        &build.selected_talent_ids,
+    ));
     let mut positions = BTreeSet::new();
     let mut counts = BTreeMap::new();
     let mut trait_ranks = BTreeMap::new();
@@ -379,6 +356,82 @@ pub(super) fn diagnose(build: &CharacterBuild) -> Vec<Diagnostic> {
                 format!("Trait rank cap exceeded: {id}")
             );
         }
+    }
+    issues
+}
+
+/// Shared talent identity and budget validation for both input forms.
+pub(super) fn diagnose_talents(
+    hero_id: &str,
+    talent_points: u32,
+    ids: &[String],
+) -> Vec<Diagnostic> {
+    let hero = &fellersim_data::catalog()["heroes"][hero_id];
+    let mut issues = Vec::new();
+    let mut issue = |code: &str, path: String, message: String| {
+        let identifier = if path == "/heroId" {
+            Some(hero_id)
+        } else {
+            path.strip_prefix("/selectedTalentIds/")
+                .and_then(|index| index.parse::<usize>().ok())
+                .and_then(|index| ids.get(index))
+                .map(String::as_str)
+        };
+        let mut d = Diagnostic::error(code, message).at(path).help(format!(
+            "Inspect valid choices with fellersim catalog talents --hero {hero_id}."
+        ));
+        if let Some(id) = identifier {
+            d.identifiers.push(id.into());
+        }
+        if code == "unsupported-hero" {
+            d.help = Some("Inspect valid heroes with fellersim catalog heroes.".into());
+        }
+        d.engine_code = Some(SimulationErrorCode::InvalidBuild);
+        issues.push(d);
+    };
+    if hero.is_null() {
+        issue(
+            "unsupported-hero",
+            "/heroId".into(),
+            "Expected a supported hero. Use fellersim catalog heroes.".into(),
+        );
+        return issues;
+    }
+    if talent_points > 14 {
+        issue(
+            "talent-budget",
+            "/talentPoints".into(),
+            "Talent budget must be at most 14.".into(),
+        );
+    }
+    if ids.len() > 32 {
+        issue(
+            "character-size",
+            "/selectedTalentIds".into(),
+            "Too many selected talents.".into(),
+        );
+        return issues;
+    }
+    let mut selected = BTreeSet::new();
+    let mut points = 0.0;
+    for (i, id) in ids.iter().enumerate() {
+        let talent = &hero["talents"][id];
+        if talent.is_null() || !selected.insert(id) {
+            issue(
+                "unknown-or-duplicate-talent",
+                format!("/selectedTalentIds/{i}"),
+                format!("Unknown or duplicate talent: {id}"),
+            );
+        } else {
+            points += num(talent, "pointCost");
+        }
+    }
+    if points > talent_points as f64 {
+        issue(
+            "talent-budget-exceeded",
+            "/selectedTalentIds".into(),
+            "Selected talents exceed the talent point budget.".into(),
+        );
     }
     issues
 }

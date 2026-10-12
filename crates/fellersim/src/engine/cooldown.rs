@@ -22,7 +22,7 @@ impl Iteration<'_> {
         let end = dot
             .expires_ms
             .min(self.common.now_ms)
-            .min(ENCOUNTER_DURATION_MS);
+            .min(self.profile.duration_ms);
         let start = dot.started_ms.min(end);
         let active = if kind.has_independent_instances() {
             let intervals = self
@@ -52,7 +52,7 @@ impl Iteration<'_> {
         };
         let key = format!("dot:{}", kind.id());
         *self.common.result.uptimes.entry(key).or_default() +=
-            active as f64 / ENCOUNTER_DURATION_MS as f64 / self.common.target_count as f64;
+            active as f64 / self.profile.duration_ms as f64 / self.common.target_count as f64;
     }
 
     pub(crate) fn reschedule_dot_ticks(&mut self) {
@@ -193,14 +193,14 @@ impl Iteration<'_> {
                 let active = self
                     .shared
                     .heroism_until
-                    .min(ENCOUNTER_DURATION_MS)
-                    .saturating_sub(started_ms.min(ENCOUNTER_DURATION_MS));
+                    .min(self.profile.duration_ms)
+                    .saturating_sub(started_ms.min(self.profile.duration_ms));
                 *self
                     .common
                     .result
                     .uptimes
                     .entry("buff:spirit-of-heroism".into())
-                    .or_default() += active as f64 / ENCOUNTER_DURATION_MS as f64;
+                    .or_default() += active as f64 / self.profile.duration_ms as f64;
             }
             self.shared.heroism_started_ms = Some(self.common.now_ms);
         } else if self.shared.heroism_started_ms.is_none() {

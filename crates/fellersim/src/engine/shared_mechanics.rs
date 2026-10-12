@@ -796,10 +796,10 @@ impl Iteration<'_> {
         if let Some(expired) = previous.filter(|buff| buff.until_ms <= self.common.now_ms) {
             let active = expired
                 .until_ms
-                .min(ENCOUNTER_DURATION_MS)
-                .saturating_sub(expired.started_ms.min(ENCOUNTER_DURATION_MS));
+                .min(self.profile.duration_ms)
+                .saturating_sub(expired.started_ms.min(self.profile.duration_ms));
             self.common.result.mechanic_buff_uptimes[mechanic.index] +=
-                active as f64 / ENCOUNTER_DURATION_MS as f64;
+                active as f64 / self.profile.duration_ms as f64;
         }
         let started_ms = previous
             .filter(|buff| buff.until_ms > self.common.now_ms)

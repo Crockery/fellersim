@@ -77,10 +77,12 @@ an effect is active.
 
 ## Targets and fight time
 
-Fellersim uses a five-minute encounter against stationary, co-located targets.
+Fellersim defaults to a five-minute encounter against stationary, co-located targets.
 For APL conditions, target health starts at 100 percent and falls evenly with
 time. At 150 seconds it is 50 percent; changing your damage does not change it.
-`target.time_to_die` and `fight.remains` both start at 300 seconds.
+`target.time_to_die` and `fight.remains` both start at the configured duration:
+300 seconds by default, or 660 with `--duration-seconds 660`. In a 660-second
+encounter, target health reaches 50 percent at 330 seconds.
 
 DoT and debuff queries inspect the primary target. They do not count all targets
 with an effect, and you cannot choose a different target in an action line.

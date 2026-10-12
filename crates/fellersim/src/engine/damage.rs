@@ -97,6 +97,10 @@ impl Iteration<'_> {
         {
             model.duration_ms += ms_param(talent, parameter_key!("durationIncreaseSeconds"));
         }
+        if kind == DpsAbilityKind::WeaponFrostVolley {
+            // Its native effect is infinite; the authored 300s is the default encounter horizon.
+            model.duration_ms = self.profile.duration_ms;
+        }
         let dot_kind = DotKind::Ability(kind);
         self.preserve_overlapping_dot(target_index, dot_kind);
         if kind == DpsAbilityKind::WeaponFrostVolley

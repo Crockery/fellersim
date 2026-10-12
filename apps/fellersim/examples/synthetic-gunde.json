@@ -1,0 +1,21 @@
+{
+  "format": "fellersim-synthetic-build",
+  "build": {
+    "schemaVersion": 1,
+    "heroId": "gunde",
+    "talentPoints": 14,
+    "selectedTalentIds": [],
+    "secondaryRatings": {
+      "crit": 100,
+      "haste": 250,
+      "expertise": 75,
+      "spirit": 125
+    },
+    "primaryStatAdd": 1500,
+    "staminaAdd": 1000,
+    "legendary": { "id": "legendary-back-a-haste" },
+    "traits": { "ItemTrait.ID.AbilityToIncreasedMainStat": 2 },
+    "gemPower": { "Ruby": 1000, "Amethyst": 500 },
+    "setBonuses": { "setb-percentage-hdt": { "pieceCount": 2 } }
+  }
+}

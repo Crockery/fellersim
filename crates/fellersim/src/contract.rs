@@ -4,32 +4,32 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use ts_rs::TS;
 
-pub const SIMULATOR_SCHEMA_VERSION: u32 = 18;
+pub const SIMULATOR_SCHEMA_VERSION: u32 = 19;
 pub const ACTION_PRIORITY_LIST_SCHEMA_VERSION: u32 = 2;
-pub const STATIONARY_DUMMY_SCENARIO_SCHEMA_VERSION: u32 = 3;
+pub const STATIONARY_DUMMY_SCENARIO_SCHEMA_VERSION: u32 = 4;
 pub const DPS_EVIDENCE_SNAPSHOT_SCHEMA_VERSION: u32 = 1;
 pub const ARDEOS_MODEL_VERSION: &str = "ardeos-stationary-dummies-v49";
-pub const ARDEOS_SCENARIO_ID: &str = "ardeos-stationary-dummies-300s-v3";
+pub const ARDEOS_SCENARIO_ID: &str = "ardeos-stationary-dummies-v4";
 pub const ARDEOS_HERO_ID: &str = "firemage";
 pub const ARDEOS_MAX_COMBAT_RANGE_UNITS: f64 = 3_000.0;
 pub const RIME_MODEL_VERSION: &str = "rime-stationary-dummies-v35";
-pub const RIME_SCENARIO_ID: &str = "rime-stationary-dummies-300s-v3";
+pub const RIME_SCENARIO_ID: &str = "rime-stationary-dummies-v4";
 pub const RIME_HERO_ID: &str = "rime";
 pub const RIME_MAX_COMBAT_RANGE_UNITS: f64 = 3_000.0;
 pub const TARIQ_MODEL_VERSION: &str = "tariq-stationary-dummies-v36";
-pub const TARIQ_SCENARIO_ID: &str = "tariq-stationary-dummies-300s-v3";
+pub const TARIQ_SCENARIO_ID: &str = "tariq-stationary-dummies-v4";
 pub const TARIQ_HERO_ID: &str = "ink";
 pub const TARIQ_MAX_COMBAT_RANGE_UNITS: f64 = 550.0;
 pub const ELARION_MODEL_VERSION: &str = "elarion-stationary-dummies-v40";
-pub const ELARION_SCENARIO_ID: &str = "elarion-stationary-dummies-300s-v3";
+pub const ELARION_SCENARIO_ID: &str = "elarion-stationary-dummies-v4";
 pub const ELARION_HERO_ID: &str = "bowguy";
 pub const ELARION_MAX_COMBAT_RANGE_UNITS: f64 = 3_000.0;
 pub const MARA_MODEL_VERSION: &str = "mara-stationary-dummies-v37";
-pub const MARA_SCENARIO_ID: &str = "mara-stationary-dummies-300s-v3";
+pub const MARA_SCENARIO_ID: &str = "mara-stationary-dummies-v4";
 pub const MARA_HERO_ID: &str = "mara";
 pub const MARA_MAX_COMBAT_RANGE_UNITS: f64 = 500.0;
 pub const GUNDE_MODEL_VERSION: &str = "gunde-stationary-dummies-v35";
-pub const GUNDE_SCENARIO_ID: &str = "gunde-stationary-dummies-300s-v3";
+pub const GUNDE_SCENARIO_ID: &str = "gunde-stationary-dummies-v4";
 pub const GUNDE_HERO_ID: &str = "gunde";
 pub const GUNDE_MAX_COMBAT_RANGE_UNITS: f64 = 500.0;
 pub const MIN_SIMULATION_ITERATIONS: u32 = 100;
@@ -43,6 +43,8 @@ pub const MAX_STATIONARY_DUMMY_TARGETS: u32 = 20;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct SimulationRequest {
+    /// True for exploratory synthetic builds; never changes combat mechanics.
+    pub exploratory: bool,
     pub schema_version: u32,
     pub run_id: String,
     pub data_build_id: String,
@@ -50,7 +52,7 @@ pub struct SimulationRequest {
     pub profile_fingerprint: String,
     pub hero_id: String,
     pub scenario_id: String,
-    pub scenario: StationaryDummyScenarioV3,
+    pub scenario: StationaryDummyScenarioV4,
     pub evidence: DpsEvidenceSnapshotV1,
     pub iterations: u32,
     /// Lowercase, sixteen-character hexadecimal u64. A string avoids JS precision loss.
@@ -64,7 +66,8 @@ pub struct SimulationRequest {
 /// Targets form one co-located stationary group directly in front of the
 /// player at the hero's maximum authored combat range. Melee heroes use their
 /// maximum melee reach; ranged heroes use their maximum ranged reach.
-pub struct StationaryDummyScenarioV3 {
+pub struct StationaryDummyScenarioV4 {
+    pub duration_ms: u64,
     pub schema_version: u32,
     /// Every target belongs to the same stationary group in front of the
     /// player and inside all source-centered acquisition radii.
@@ -660,13 +663,14 @@ pub struct SimulationProgress {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct SimulationResult {
+    pub exploratory: bool,
     pub schema_version: u32,
     pub run_id: String,
     pub data_build_id: String,
     pub model_version: String,
     pub profile_fingerprint: String,
     pub scenario_id: String,
-    pub scenario: StationaryDummyScenarioV3,
+    pub scenario: StationaryDummyScenarioV4,
     pub evidence: DpsEvidenceSnapshotV1,
     pub iterations: u32,
     pub seed: String,

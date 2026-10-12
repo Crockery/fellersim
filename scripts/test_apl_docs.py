@@ -38,6 +38,7 @@ class DocumentationTests(unittest.TestCase):
         self.source = self.root / 'source'
         self.source.mkdir()
         shutil.copytree(DOCS, self.source / 'docs/apl')
+        shutil.copyfile(DOCS.parent / 'synthetic-builds.md', self.source / 'docs/synthetic-builds.md')
         shutil.copytree(PUBLIC / 'default-apls', self.source / 'default-apls')
         shutil.copytree(APP / 'examples', self.source / 'apps/fellersim/examples')
         for name in ['README.md', 'agent-guide.md', 'LICENSE', 'NOTICE']:

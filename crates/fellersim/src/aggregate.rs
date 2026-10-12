@@ -181,7 +181,7 @@ where
                     match metric {
                         crate::ComparisonMetric::TotalDps => result.damage,
                         crate::ComparisonMetric::PrimaryTargetDps => result.targets[0],
-                    } / (ENCOUNTER_DURATION_MS as f64 / 1000.0),
+                    } / (request.scenario.duration_ms as f64 / 1000.0),
                 );
             }
             accumulator.push(result)?;
@@ -233,6 +233,7 @@ pub(crate) fn aggregate_profile_sweep(
 }
 
 struct SimulationAccumulator {
+    duration_ms: u64,
     dps: Vec<f64>,
     abilities: Vec<AbilityTotals>,
     mechanic_buff_uptimes: Vec<f64>,
@@ -252,6 +253,7 @@ impl SimulationAccumulator {
         enforce_profile_budget: bool,
     ) -> Self {
         Self {
+            duration_ms: request.scenario.duration_ms,
             dps: Vec::with_capacity(request.iterations as usize),
             abilities: vec![AbilityTotals::default(); profile.damage_sources.len()],
             mechanic_buff_uptimes: vec![0.0; profile.mechanics.len()],
@@ -280,7 +282,7 @@ impl SimulationAccumulator {
             ));
         }
         self.dps
-            .push(iteration.damage / (ENCOUNTER_DURATION_MS as f64 / 1_000.0));
+            .push(iteration.damage / (self.duration_ms as f64 / 1_000.0));
         for (total, current) in self.target_damage.iter_mut().zip(iteration.targets) {
             *total += current;
         }
@@ -339,15 +341,15 @@ impl SimulationAccumulator {
                 "simulation ended before all iterations completed",
             ));
         }
-        debug_assert!(self.max_iteration_work_units <= MAX_ITERATION_WORK_UNITS);
+        debug_assert!(self.max_iteration_work_units <= iteration_work_budget(self.duration_ms));
         if self.enforce_profile_budget
-            && self.max_iteration_work_units >= MAX_ITERATION_WORK_UNITS / 4
+            && self.max_iteration_work_units >= iteration_work_budget(self.duration_ms) / 4
         {
             let message = {
                 let base = format!(
                     "simulation used {} work units; browser-generated profiles must remain below {}",
                     self.max_iteration_work_units,
-                    MAX_ITERATION_WORK_UNITS / 4,
+                    iteration_work_budget(self.duration_ms) / 4,
                 );
                 #[cfg(feature = "strict-work-budget")]
                 {
@@ -400,7 +402,7 @@ impl SimulationAccumulator {
             .map(|(source_index, totals)| {
                 let source = &profile.damage_sources[source_index];
                 let mean_damage = totals.damage / count;
-                let mean_dps = mean_damage / (ENCOUNTER_DURATION_MS as f64 / 1_000.0);
+                let mean_dps = mean_damage / (self.duration_ms as f64 / 1_000.0);
                 AbilityDamageResult {
                     ability_id: source.id.clone(),
                     ability_name: source.name.clone(),
@@ -428,7 +430,7 @@ impl SimulationAccumulator {
             .filter(|(total, _)| *total > 0)
             .map(|(total, source)| {
                 let mean_count = total as f64 / count;
-                let mean_per_minute = mean_count / (ENCOUNTER_DURATION_MS as f64 / 60_000.0);
+                let mean_per_minute = mean_count / (self.duration_ms as f64 / 60_000.0);
                 if !mean_count.is_finite()
                     || !mean_per_minute.is_finite()
                     || mean_count < 0.0
@@ -511,7 +513,7 @@ impl SimulationAccumulator {
             .enumerate()
             .map(|(index, damage)| {
                 let mean_damage = damage / count;
-                let mean_dps = mean_damage / (ENCOUNTER_DURATION_MS as f64 / 1_000.0);
+                let mean_dps = mean_damage / (self.duration_ms as f64 / 1_000.0);
                 TargetDamageResult {
                     target_index: index as u32,
                     primary: index == 0,
@@ -526,6 +528,7 @@ impl SimulationAccumulator {
             .map(|target| target.mean_dps)
             .unwrap_or(0.0);
         Ok(SimulationResult {
+            exploratory: request.exploratory,
             schema_version: SIMULATOR_SCHEMA_VERSION,
             run_id: request.run_id.clone(),
             data_build_id: request.data_build_id.clone(),

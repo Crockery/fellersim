@@ -198,7 +198,7 @@ impl Iteration<'_> {
                     self.deactivate_fixed_buff(AplBuff::BroodingShadows);
                 } else {
                     self.hero.mara_mut().stealth_active = true;
-                    self.activate_fixed_buff(AplBuff::BroodingShadows, ENCOUNTER_DURATION_MS);
+                    self.activate_fixed_buff(AplBuff::BroodingShadows, self.profile.duration_ms);
                 }
             }
             DpsAbilityKind::MaidenOfDeath => {

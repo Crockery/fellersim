@@ -61,7 +61,8 @@ simulates many fights and reports average damage.
 If a check fails, read the error's line number and message. Fix the file and check
 again. A successful check means the rotation is valid, not that it is optimal.
 
-The encounter lasts five minutes. Trace limits control how much of a fight you
+The encounter defaults to five minutes; `--duration-seconds 660` selects eleven
+minutes. Trace limits control how much of a fight you
 see; they do not shorten the fight. See [why actions run](Why-actions-run.md)
 for help reading the results.
 

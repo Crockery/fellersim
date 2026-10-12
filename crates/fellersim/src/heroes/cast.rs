@@ -767,7 +767,7 @@ impl Iteration<'_> {
                 precast_gcd_ms,
                 ability.gcd_scales_with_cooldown_recovery,
             );
-            if self.common.now_ms >= ENCOUNTER_DURATION_MS {
+            if self.common.now_ms >= self.profile.duration_ms {
                 return;
             }
 
@@ -889,7 +889,7 @@ impl Iteration<'_> {
                     .glacial_assault_stacks
                     .saturating_add(1)
                     .min(param_u32(talent, parameter_key!("maximumStacks")));
-                self.activate_fixed_buff(AplBuff::GlacialAssault, ENCOUNTER_DURATION_MS);
+                self.activate_fixed_buff(AplBuff::GlacialAssault, self.profile.duration_ms);
             }
             if let Some(talent) = self.common.selected_talents.get("rime-talent-id-talent5") {
                 self.hero.rime_mut().icy_flow_stacks = self

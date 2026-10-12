@@ -871,7 +871,7 @@ impl Iteration<'_> {
         }
         self.add_tariq_fury(fury);
         let next = self.common.now_ms.saturating_add(1_000);
-        if next <= ENCOUNTER_DURATION_MS {
+        if next <= self.profile.duration_ms {
             self.push_event(next, TariqEvent::PassiveFury { generation });
         }
     }

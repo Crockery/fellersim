@@ -46,7 +46,7 @@ pub async fn execute(command: Command, quiet: bool) -> Result<Outcome, Failure> 
         Command::Validate(args) => {
             let request = load(&args)?.prepare()?;
             Ok(Outcome::success(
-                json!({"valid":true,"dataBuildId":request.data_build_id,"modelVersion":request.model_version,"seed":request.seed,"profileFingerprint":request.profile_fingerprint}),
+                json!({"valid":true,"exploratory":request.exploratory,"dataBuildId":request.data_build_id,"modelVersion":request.model_version,"seed":request.seed,"profileFingerprint":request.profile_fingerprint}),
             ))
         }
         Command::Prepare(args) => inspect(args, false),
@@ -124,7 +124,7 @@ fn inspect(args: Inspection, require_apl: bool) -> Result<Outcome, Failure> {
         ));
     }
     // Validate options even for character-only preparation.
-    let mut issues = diagnose_character(&loaded.character);
+    let mut issues = loaded.character.diagnose();
     for d in &mut issues {
         d.path = d.path.take().map(|p| format!("/character/build{p}"));
     }
@@ -135,7 +135,9 @@ fn inspect(args: Inspection, require_apl: bool) -> Result<Outcome, Failure> {
             issues,
         )));
     }
-    let (profile, evidence) = prepare_character(&loaded.character, loaded.options.targets)
+    let (profile, evidence) = loaded
+        .character
+        .resolve(loaded.options.targets)
         .map_err(|e| loaded.locate(e))?;
     let mut stats = serde_json::to_value(&profile).unwrap();
     for key in [
@@ -149,7 +151,7 @@ fn inspect(args: Inspection, require_apl: bool) -> Result<Outcome, Failure> {
     ] {
         stats.as_object_mut().unwrap().remove(key);
     }
-    let mut value = json!({"heroId":loaded.character.hero_id,"stats":stats,"talents":profile.talents,"effects":profile.mechanics,"availableAbilities":profile.abilities.iter().map(|a| json!({"id":a.kind,"gameAbilityId":a.id,"name":a.name,"manuallyCastable":a.manually_castable})).collect::<Vec<_>>(),"targetEffects":profile.apl_target_effects,"modelingLimitations":output::limitations(&evidence),"evidenceFingerprint":evidence.evidence_fingerprint});
+    let mut value = json!({"exploratory":loaded.character.exploratory(),"heroId":loaded.character.hero_id(),"stats":stats,"talents":profile.talents,"effects":profile.mechanics,"availableAbilities":profile.abilities.iter().map(|a| json!({"id":a.kind,"gameAbilityId":a.id,"name":a.name,"manuallyCastable":a.manually_castable})).collect::<Vec<_>>(),"targetEffects":profile.apl_target_effects,"modelingLimitations":output::limitations(&evidence),"evidenceFingerprint":evidence.evidence_fingerprint});
     if let Some(source) = &loaded.apl {
         let request = loaded.prepare()?;
         value["rules"] = json!(explain_apl(&request).map_err(Failure::from)?);

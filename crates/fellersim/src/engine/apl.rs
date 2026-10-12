@@ -699,14 +699,15 @@ impl Iteration<'_> {
                 .unwrap_or(0.0),
             AplNumericReference::TargetCount => f64::from(self.common.target_count),
             AplNumericReference::TargetHealthPercent => {
-                ENCOUNTER_DURATION_MS
+                self.profile
+                    .duration_ms
                     .saturating_sub(self.common.now_ms)
-                    .min(ENCOUNTER_DURATION_MS) as f64
-                    / ENCOUNTER_DURATION_MS as f64
+                    .min(self.profile.duration_ms) as f64
+                    / self.profile.duration_ms as f64
                     * 100.0
             }
             AplNumericReference::TargetTimeToDie | AplNumericReference::FightRemaining => {
-                ENCOUNTER_DURATION_MS.saturating_sub(self.common.now_ms) as f64 / 1_000.0
+                self.profile.duration_ms.saturating_sub(self.common.now_ms) as f64 / 1_000.0
             }
             AplNumericReference::FightElapsed => self.common.now_ms as f64 / 1_000.0,
         }
@@ -746,8 +747,15 @@ impl Iteration<'_> {
     }
 }
 
-pub(crate) fn fight_threshold_times(node: &AplExpressionNode) -> (Vec<u64>, usize) {
-    fn threshold(reference: &AplNumericReference, other: &AplNumericOperand) -> Option<u64> {
+pub(crate) fn fight_threshold_times(
+    node: &AplExpressionNode,
+    duration_ms: u64,
+) -> (Vec<u64>, usize) {
+    fn threshold(
+        reference: &AplNumericReference,
+        other: &AplNumericOperand,
+        duration_ms: u64,
+    ) -> Option<u64> {
         let AplNumericOperand::Number { value: seconds } = other else {
             return None;
         };
@@ -762,38 +770,46 @@ pub(crate) fn fight_threshold_times(node: &AplExpressionNode) -> (Vec<u64>, usiz
         match reference {
             AplNumericReference::FightElapsed => Some(threshold_ms),
             AplNumericReference::FightRemaining | AplNumericReference::TargetTimeToDie => {
-                Some(ENCOUNTER_DURATION_MS.saturating_sub(threshold_ms))
+                Some(duration_ms.saturating_sub(threshold_ms))
             }
             AplNumericReference::TargetHealthPercent => {
-                let remaining = (*seconds / 100.0 * ENCOUNTER_DURATION_MS as f64)
+                let remaining = (*seconds / 100.0 * duration_ms as f64)
                     .round()
-                    .clamp(0.0, ENCOUNTER_DURATION_MS as f64)
-                    as u64;
-                Some(ENCOUNTER_DURATION_MS.saturating_sub(remaining))
+                    .clamp(0.0, duration_ms as f64) as u64;
+                Some(duration_ms.saturating_sub(remaining))
             }
             _ => None,
         }
     }
 
-    fn operand_threshold(value: &AplNumericOperand, other: &AplNumericOperand) -> Option<u64> {
+    fn operand_threshold(
+        value: &AplNumericOperand,
+        other: &AplNumericOperand,
+        duration_ms: u64,
+    ) -> Option<u64> {
         let AplNumericOperand::Reference { reference } = value else {
             return None;
         };
-        threshold(reference, other)
+        threshold(reference, other, duration_ms)
     }
 
-    fn collect(node: &AplExpressionNode, times: &mut Vec<u64>, visited: &mut usize) {
+    fn collect(
+        node: &AplExpressionNode,
+        times: &mut Vec<u64>,
+        visited: &mut usize,
+        duration_ms: u64,
+    ) {
         *visited = visited.saturating_add(1);
         match &node.expression {
             AplExpression::All { children } | AplExpression::Any { children } => {
                 for child in children {
-                    collect(child, times, visited);
+                    collect(child, times, visited, duration_ms);
                 }
             }
-            AplExpression::Not { child } => collect(child, times, visited),
+            AplExpression::Not { child } => collect(child, times, visited, duration_ms),
             AplExpression::Comparison { left, right, .. } => {
-                if let Some(time) =
-                    operand_threshold(left, right).or_else(|| operand_threshold(right, left))
+                if let Some(time) = operand_threshold(left, right, duration_ms)
+                    .or_else(|| operand_threshold(right, left, duration_ms))
                 {
                     times.push(time);
                     times.push(time.saturating_add(1));
@@ -805,6 +821,6 @@ pub(crate) fn fight_threshold_times(node: &AplExpressionNode) -> (Vec<u64>, usiz
 
     let mut times = Vec::new();
     let mut visited = 0;
-    collect(node, &mut times, &mut visited);
+    collect(node, &mut times, &mut visited, duration_ms);
     (times, visited)
 }

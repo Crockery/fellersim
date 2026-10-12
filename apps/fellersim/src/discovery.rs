@@ -5,6 +5,7 @@ use serde_json::{Value, json};
 
 pub const SCHEMAS: &[&str] = &[
     "character",
+    "synthetic",
     "request",
     "batch",
     "response",
@@ -30,6 +31,7 @@ fn generated<T: JsonSchema>() -> Value {
 pub fn schema(name: &str) -> Result<Value, Failure> {
     Ok(match name {
         "character" => generated::<CharacterFile>(),
+        "synthetic" => generated::<SyntheticFile>(),
         "request" => generated::<Request>(),
         "batch" => generated::<Manifest>(),
         "run-response" => generated::<Response<SimulationReport>>(),
@@ -84,7 +86,7 @@ pub fn describe(path: Option<&str>) -> Result<Value, Failure> {
     }
     Ok(
         json!({"command":describe_command(&command),"schemas":SCHEMAS,"catalogs":crate::catalog::KINDS,
-        "limits":{"characterBytes":FILE_LIMIT,"aplBytes":FILE_LIMIT,"manifestBytes":MANIFEST_LIMIT,"batchCases":64,"workers":4,"iterations":{"min":100,"max":100000,"default":10000},"targets":{"min":1,"max":20,"default":1},"diagnostics":100,"traceDecisions":{"default":200,"max":10000},"traceSeconds":{"default":10,"max":300}},
+        "limits":{"characterBytes":FILE_LIMIT,"aplBytes":FILE_LIMIT,"manifestBytes":MANIFEST_LIMIT,"batchCases":64,"workers":4,"iterations":{"min":100,"max":100000,"default":10000},"targets":{"min":1,"max":20,"default":1},"diagnostics":100,"traceDecisions":{"default":200,"max":10000},"traceSeconds":{"default":10,"max":1200},"durationSeconds":{"min":1,"max":1200,"default":300}},
         "exitCodes":{"0":"success","1":"execution or mixed batch failure","2":"argument or input validation","124":"timeout","130":"cancelled"},
         "examples":["fellersim catalog heroes --json","fellersim character init --hero firemage > character.json","fellersim validate --character character.json --default-apl --json","fellersim prepare --character character.json --default-apl --json","fellersim run --character character.json --default-apl --iterations 100 --json","fellersim compare --input variants.json --baseline original --json"]}),
     )

@@ -356,6 +356,7 @@ fn explicit_seed_matches_library_and_default_seed_ignores_comments() {
         character: serde_json::from_value(file["build"].clone()).unwrap(),
         apl_source: std::fs::read_to_string(&apl).unwrap(),
         options: SimulationOptions {
+            duration_seconds: 300,
             iterations: 100,
             targets: 1,
             seed: Some("0000000000000001".into()),

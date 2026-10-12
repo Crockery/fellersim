@@ -894,6 +894,7 @@ fn validate_compiled_mechanic_parameters(
 
 #[derive(Debug, Clone)]
 pub(super) struct CompiledProfile {
+    pub(super) duration_ms: u64,
     pub(super) source: NormalizedDpsProfile,
     pub(super) abilities: Vec<Arc<CompiledAbility>>,
     pub(super) talents: Vec<CompiledTalent>,
@@ -1486,6 +1487,7 @@ impl CompiledProfile {
             .filter_map(|mechanic| mechanic.parameters.get(parameter_key!("startingSpirit")))
             .sum();
         Ok(Self {
+            duration_ms: ENCOUNTER_DURATION_MS,
             contract,
             validated_seed,
             abilities_by_kind: source
@@ -1607,7 +1609,9 @@ impl TryFrom<&SimulationRequest> for CompiledProfile {
 
     fn try_from(request: &SimulationRequest) -> Result<Self, Self::Error> {
         let validated_seed = validate(request)?;
-        Self::compile(&request.profile, validated_seed)
+        let mut profile = Self::compile(&request.profile, validated_seed)?;
+        profile.duration_ms = request.scenario.duration_ms;
+        Ok(profile)
     }
 }
 

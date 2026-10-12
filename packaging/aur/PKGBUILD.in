@@ -22,6 +22,7 @@ package() {
   install -Dm644 README.md "$pkgdir/usr/share/doc/fellersim/README.md"
   install -Dm644 agent-guide.md "$pkgdir/usr/share/doc/fellersim/agent-guide.md"
   install -dm755 "$pkgdir/usr/share/doc/fellersim/docs/apl"
+  install -m644 docs/synthetic-builds.md "$pkgdir/usr/share/doc/fellersim/docs/"
   install -m644 docs/apl/*.md "$pkgdir/usr/share/doc/fellersim/docs/apl/"
   # Keep the guide's relative links to shipped rotations usable offline.
   ln -s /usr/share/fellersim/default-apls "$pkgdir/usr/share/doc/fellersim/default-apls"

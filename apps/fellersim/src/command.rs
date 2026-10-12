@@ -125,11 +125,17 @@ pub enum Detail {
 #[derive(Args, Default)]
 pub struct Input {
     /// Read a complete request JSON file; use - to read from standard input.
-    #[arg(long, conflicts_with_all = ["character","apl","default_apl","config","iterations","targets","seed"])]
+    #[arg(long, conflicts_with_all = ["character","synthetic","apl","default_apl","config","iterations","targets","seed","duration_seconds"])]
     pub input: Option<PathBuf>,
     /// Read a character JSON file exported from the Fellership Character Planner.
     #[arg(long)]
     pub character: Option<PathBuf>,
+    /// Read an exploratory synthetic build JSON file.
+    #[arg(long, conflicts_with = "character")]
+    pub synthetic: Option<PathBuf>,
+    /// Encounter duration in seconds (1–1200; default: 300 unless configured).
+    #[arg(long)]
+    pub duration_seconds: Option<u32>,
     /// Read ability rules from an action priority list (APL) file for this hero.
     #[arg(long, conflicts_with = "default_apl")]
     pub apl: Option<PathBuf>,
@@ -172,8 +178,8 @@ pub struct Trace {
     /// Choose which repeatable fight to trace, counting from zero (0-99999).
     #[arg(long, default_value_t = 0, value_parser = clap::value_parser!(u32).range(0..100000))]
     pub iteration_index: u32,
-    /// Record decisions for this many simulated seconds (0-300); the fight still finishes.
-    #[arg(long, default_value_t = 10, value_parser = clap::value_parser!(u32).range(0..=300))]
+    /// Record decisions for this many simulated seconds (0-1200, within the encounter); the fight still finishes.
+    #[arg(long, default_value_t = 10, value_parser = clap::value_parser!(u32).range(0..=1200))]
     pub seconds: u32,
     /// Record at most this many ability decisions (1-10000).
     #[arg(long, default_value_t = 200, value_parser = clap::value_parser!(u32).range(1..=10000))]

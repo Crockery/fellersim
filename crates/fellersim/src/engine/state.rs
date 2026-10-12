@@ -11,6 +11,11 @@ use crate::*;
 // the separate quarter-budget guard and cancellation checks every 256 units.
 pub(crate) const MAX_ITERATION_WORK_UNITS: u32 = 4_000_000;
 // Increasing the cumulative allowance must not admit oversized single fanouts.
+pub(crate) fn iteration_work_budget(duration_ms: u64) -> u32 {
+    (u64::from(MAX_ITERATION_WORK_UNITS) * duration_ms.max(ENCOUNTER_DURATION_MS))
+        .div_ceil(ENCOUNTER_DURATION_MS) as u32
+}
+
 const MAX_SINGLE_WORK_CHARGE: u32 = 100_000;
 const MAX_ACTIONS_AT_ONE_TIMESTAMP: u32 = 64;
 const MAX_PENDING_EVENTS: usize = 16_384;
@@ -19,6 +24,7 @@ const CANCELLATION_CHECK_WORK_UNITS: u32 = 256;
 #[derive(Debug)]
 pub(crate) struct ExecutionControl<'a> {
     cancelled: &'a AtomicBool,
+    work_budget: u32,
     work_units: Cell<u32>,
     work_since_cancel_check: Cell<u32>,
     lightweight_loop_remainder: Cell<usize>,
@@ -30,9 +36,10 @@ pub(crate) struct ExecutionControl<'a> {
 }
 
 impl<'a> ExecutionControl<'a> {
-    fn new(cancelled: &'a AtomicBool) -> Self {
+    fn new(cancelled: &'a AtomicBool, duration_ms: u64) -> Self {
         Self {
             cancelled,
+            work_budget: iteration_work_budget(duration_ms),
             work_units: Cell::new(0),
             work_since_cancel_check: Cell::new(0),
             lightweight_loop_remainder: Cell::new(0),
@@ -53,7 +60,7 @@ impl<'a> ExecutionControl<'a> {
             self.fail_limit();
             return false;
         };
-        if units > MAX_SINGLE_WORK_CHARGE || next > MAX_ITERATION_WORK_UNITS {
+        if units > MAX_SINGLE_WORK_CHARGE || next > self.work_budget {
             self.fail_limit();
             return false;
         }
@@ -785,7 +792,7 @@ impl<'a> Iteration<'a> {
                 apl_fight_threshold_times.push(rule.active_until_ms);
             }
             if let Some(condition) = &rule.condition {
-                let (times, visited) = fight_threshold_times(condition);
+                let (times, visited) = fight_threshold_times(condition, profile.duration_ms);
                 apl_threshold_collection_work =
                     apl_threshold_collection_work.saturating_add(visited);
                 apl_fight_threshold_times.extend(times);
@@ -793,7 +800,7 @@ impl<'a> Iteration<'a> {
         }
         apl_fight_threshold_times.sort_unstable();
         apl_fight_threshold_times.dedup();
-        let execution = ExecutionControl::new(cancelled);
+        let execution = ExecutionControl::new(cancelled, profile.duration_ms);
         execution.charge_usize(apl_compile_work.saturating_add(apl_threshold_collection_work));
         let result = IterationResult {
             targets: vec![0.0; target_count as usize],
@@ -1221,7 +1228,7 @@ impl<'a> Iteration<'a> {
         mut self,
         capture: Option<crate::TraceOptions>,
     ) -> Result<IterationResult, SimulationError> {
-        while self.common.now_ms < ENCOUNTER_DURATION_MS {
+        while self.common.now_ms < self.profile.duration_ms {
             if !self.common.execution.check_cancelled() {
                 break;
             }
@@ -1267,7 +1274,7 @@ impl<'a> Iteration<'a> {
         if let Some(error) = self.common.execution.error() {
             return Err(error);
         }
-        self.process_events_through(ENCOUNTER_DURATION_MS);
+        self.process_events_through(self.profile.duration_ms);
         if let Some(error) = self.common.execution.error() {
             return Err(error);
         }
@@ -1294,14 +1301,14 @@ impl<'a> Iteration<'a> {
             let active = self
                 .shared
                 .heroism_until
-                .min(ENCOUNTER_DURATION_MS)
-                .saturating_sub(started_ms.min(ENCOUNTER_DURATION_MS));
+                .min(self.profile.duration_ms)
+                .saturating_sub(started_ms.min(self.profile.duration_ms));
             *self
                 .common
                 .result
                 .uptimes
                 .entry("buff:spirit-of-heroism".into())
-                .or_default() += active as f64 / ENCOUNTER_DURATION_MS as f64;
+                .or_default() += active as f64 / self.profile.duration_ms as f64;
         }
         for (index, buff) in self.shared.dynamic_buffs.iter().enumerate() {
             let Some(buff) = buff else {
@@ -1309,10 +1316,10 @@ impl<'a> Iteration<'a> {
             };
             let active = buff
                 .until_ms
-                .min(ENCOUNTER_DURATION_MS)
-                .saturating_sub(buff.started_ms.min(ENCOUNTER_DURATION_MS));
+                .min(self.profile.duration_ms)
+                .saturating_sub(buff.started_ms.min(self.profile.duration_ms));
             self.common.result.mechanic_buff_uptimes[index] +=
-                active as f64 / ENCOUNTER_DURATION_MS as f64;
+                active as f64 / self.profile.duration_ms as f64;
         }
         for (id, buff) in &self.common.fixed_buff_uptimes {
             *self
@@ -1320,8 +1327,8 @@ impl<'a> Iteration<'a> {
                 .result
                 .uptimes
                 .entry(format!("buff:{id}"))
-                .or_default() +=
-                buff.total_active_ms(ENCOUNTER_DURATION_MS) as f64 / ENCOUNTER_DURATION_MS as f64;
+                .or_default() += buff.total_active_ms(self.profile.duration_ms) as f64
+                / self.profile.duration_ms as f64;
         }
         self.common.result.work_units = self.common.execution.work_units();
         #[cfg(feature = "strict-work-budget")]
@@ -1332,7 +1339,7 @@ impl<'a> Iteration<'a> {
     }
 
     pub(crate) fn next_interesting_time(&self) -> u64 {
-        let mut next = ENCOUNTER_DURATION_MS;
+        let mut next = self.profile.duration_ms;
         let mut consider = |time: u64| {
             if time > self.common.now_ms {
                 next = next.min(time);
@@ -1529,7 +1536,7 @@ impl<'a> Iteration<'a> {
         if let Some(time) = self.common.apl_fight_threshold_times.get(threshold_cursor) {
             consider(*time);
         }
-        next.min(ENCOUNTER_DURATION_MS)
+        next.min(self.profile.duration_ms)
     }
 
     pub(crate) fn push_event(&mut self, at_ms: u64, kind: impl Into<EventKind>) {

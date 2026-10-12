@@ -186,6 +186,9 @@ pub fn emit(command: &str, json_mode: bool, outcome: Outcome) -> u8 {
     exit
 }
 fn human(command: &str, data: &Value) {
+    if data["exploratory"] == true {
+        println!("Exploratory synthetic build (equipment feasibility not evaluated)");
+    }
     if command == "run" {
         println!(
             "Mean DPS: {:.2}\n95% confidence interval: {:.2}–{:.2}\nPrimary target DPS: {:.2}\nIterations: {}\nSeed: {}\nModel: {}",
@@ -276,13 +279,14 @@ pub fn limitations(evidence: &DpsEvidenceSnapshotV1) -> Vec<DpsEvidenceClaimSnap
 #[derive(Debug, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct SimulationReport {
+    pub exploratory: bool,
     pub schema_version: u32,
     pub run_id: String,
     pub data_build_id: String,
     pub model_version: String,
     pub profile_fingerprint: String,
     pub scenario_id: String,
-    pub scenario: StationaryDummyScenarioV3,
+    pub scenario: StationaryDummyScenarioV4,
     pub iterations: u32,
     pub seed: String,
     pub mean_dps: f64,
@@ -305,6 +309,7 @@ pub struct SimulationReport {
 pub fn result(r: &SimulationResult, detail: Detail) -> Value {
     let full = detail == Detail::Full;
     serde_json::to_value(SimulationReport {
+        exploratory: r.exploratory,
         schema_version: r.schema_version,
         run_id: r.run_id.clone(),
         data_build_id: r.data_build_id.clone(),
@@ -332,6 +337,7 @@ pub fn result(r: &SimulationResult, detail: Detail) -> Value {
 #[derive(Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ValidationReport {
+    pub exploratory: bool,
     pub valid: bool,
     pub data_build_id: String,
     pub model_version: String,
@@ -358,6 +364,7 @@ pub struct CatalogReport {
 #[derive(Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct PreparationReport {
+    pub exploratory: bool,
     pub hero_id: String,
     pub stats: Value,
     pub talents: Vec<DpsTalentModel>,
@@ -370,7 +377,7 @@ pub struct PreparationReport {
     pub source_map: Option<Vec<AplSourceLocation>>,
     pub seed: Option<String>,
     pub profile_fingerprint: Option<String>,
-    pub scenario: Option<StationaryDummyScenarioV3>,
+    pub scenario: Option<StationaryDummyScenarioV4>,
     pub profile: Option<NormalizedDpsProfile>,
     pub evidence: Option<DpsEvidenceSnapshotV1>,
 }

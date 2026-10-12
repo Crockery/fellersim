@@ -14,6 +14,7 @@ mod listener_order;
 mod preparation;
 mod shared_bonuses;
 mod stat_traits;
+mod synthetic;
 mod weapons;
 
 mod heroes {

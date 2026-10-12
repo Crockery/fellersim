@@ -70,13 +70,16 @@ fn simulator_default_iteration_benchmark() {
     const ARDEOS_BASELINE: Baseline = Baseline {
         elapsed_ms: 2_262,
         allocations: 32_125_492,
-        allocated_bytes: 2_050_495_576,
+        // About 2.92 GB across 10,000 iterations; allow roughly 11% headroom.
+        // This cumulative allocation budget is separate from peak live memory.
+        allocated_bytes: 3_250_000_000,
         peak_live_bytes: 19_337_740,
     };
     const RIME_BASELINE: Baseline = Baseline {
         elapsed_ms: 1_222,
         allocations: 15_686_617,
-        allocated_bytes: 1_557_387_452,
+        // About 1.61 GB across 10,000 iterations, with the same headroom.
+        allocated_bytes: 1_800_000_000,
         peak_live_bytes: 20_621_064,
     };
     const WALL_TIME_TOLERANCE_PERCENT: u128 = 25;

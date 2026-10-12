@@ -32,6 +32,13 @@ The starter is an ordinary planner export and can be imported back into
 Fellership. Equipment positions are already present. Edit selections inside
 `build`; keep its envelope intact.
 
+For independent stats and effects, use `--synthetic FILE` and `schema synthetic`.
+The [synthetic build guide](docs/synthetic-builds.md) includes a complete JSON
+configuration, rating units, ranked effects, and Rust batch evaluation.
+Synthetic results are exploratory: validation checks mechanics, not equipment
+feasibility. The same preparation, execution, explanation, and trace commands
+accept either build type.
+
 On failure, inspect each diagnostic's `code`, `engineCode`, `source`, `path`,
 `line`, `column`, `identifiers`, and `help`. JSON paths use JSON Pointer;
 APL locations are one-based. Fix independent issues together, then validate
@@ -57,7 +64,8 @@ state. Excluded source rules remain visible in the accompanying explanations.
 
 Trace capture defaults to 10 simulated seconds and 200 decisions. Set
 `--seconds` and `--decisions` to adjust it within the limits in `describe`.
-The complete five-minute encounter still executes after capture stops.
+The complete configured encounter still executes after capture stops. Duration
+defaults to 300 seconds; `--duration-seconds 660` selects an eleven-minute fight.
 `truncated` refers to observation capture, not encounter duration.
 Use the same character, APL, options, seed, and iteration index to reproduce it.
 
@@ -79,8 +87,9 @@ fellersim batch --input examples/variants.json --jobs 2 --json
 fellersim compare --input examples/variants.json --baseline original --json
 ```
 
-A complete request uses a tagged `character` source (`file` with `path`, or
-`inline` with the planner `document`) and an APL source (`file`, `inline`
+A complete request uses a tagged `character` source (`file` with `path`,
+`inline` with the planner `document`, `synthetic-file` with `path`, or `synthetic`
+with a synthetic `document`) and an APL source (`file`, `inline`
 with `source`, or `default`). It cannot be mixed with individual input or
 simulation-option flags. `--input -` reads stdin. File references resolve
 relative to the containing manifest; stdin references resolve relative to
@@ -92,7 +101,7 @@ unique IDs and results retain input order. Invalid cases do not prevent valid
 cases from running. `--jobs` defaults to one and accepts up to four; active
 cases share a total four-worker budget.
 
-Comparisons require one hero, game/model version, scenario, target count, and
+Comparisons require one hero, game/model version, scenario, duration, target count, and
 iteration count. Put an explicit seed in shared `options.seed`, or leave it
 unset to use the baseline's deterministic seed for every case. Case-specific
 seed overrides are rejected. `--metric primary-target-dps` selects the alternate

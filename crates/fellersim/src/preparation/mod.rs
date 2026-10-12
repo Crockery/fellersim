@@ -7,6 +7,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use ts_rs::TS;
 mod character;
 mod stats;
+mod synthetic;
+pub use synthetic::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -82,6 +84,9 @@ pub struct CharacterBlessing {
 #[derive(Debug, Clone, Serialize, Deserialize, TS, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct SimulationOptions {
+    #[serde(default = "default_duration_seconds")]
+    #[schemars(range(min = 1, max = 1200))]
+    pub duration_seconds: u32,
     #[serde(default = "default_iterations")]
     #[schemars(range(min = 100, max = 100000))]
     pub iterations: u32,
@@ -92,6 +97,9 @@ pub struct SimulationOptions {
     #[schemars(regex(pattern = "^[0-9a-f]{16}$"))]
     pub seed: Option<String>,
 }
+fn default_duration_seconds() -> u32 {
+    300
+}
 fn default_iterations() -> u32 {
     DEFAULT_SIMULATION_ITERATIONS
 }
@@ -101,6 +109,7 @@ fn default_targets() -> u32 {
 impl Default for SimulationOptions {
     fn default() -> Self {
         Self {
+            duration_seconds: default_duration_seconds(),
             iterations: default_iterations(),
             targets: 1,
             seed: None,
@@ -195,6 +204,12 @@ pub fn validate_input(input: &SimulationInput) -> Result<(), SimulationError> {
 
 pub fn diagnose_options(options: &SimulationOptions) -> Vec<Diagnostic> {
     let mut diagnostics = Vec::new();
+    if !(1..=1200).contains(&options.duration_seconds) {
+        diagnostics.push(
+            Diagnostic::error("invalid-duration", "Duration must be 1–1200 seconds.")
+                .at("/options/durationSeconds"),
+        );
+    }
     if !(MIN_SIMULATION_ITERATIONS..=MAX_SIMULATION_ITERATIONS).contains(&options.iterations) {
         diagnostics.push(
             Diagnostic::error("invalid-iterations", "Iterations must be 100–100000.")
@@ -230,15 +245,46 @@ pub fn diagnose_options(options: &SimulationOptions) -> Vec<Diagnostic> {
 pub fn prepare(input: &SimulationInput) -> Result<SimulationRequest, SimulationError> {
     validate_input(input)?;
     let (profile, evidence) = prepare_character(&input.character, input.options.targets)?;
-    let hero = HeroIdentity::from_id(&input.character.hero_id)
+    assemble_request(
+        &input.character.hero_id,
+        profile,
+        evidence,
+        &input.options,
+        &input.run_id,
+        &parse_apl_document(&input.apl_source)?,
+        false,
+    )
+}
+
+fn assemble_request(
+    hero_id: &str,
+    profile: NormalizedDpsProfile,
+    evidence: DpsEvidenceSnapshotV1,
+    options: &SimulationOptions,
+    run_id: &str,
+    document: &AplDocument,
+    exploratory: bool,
+) -> Result<SimulationRequest, SimulationError> {
+    let diagnostics = diagnose_options(options);
+    if !diagnostics.is_empty() {
+        return Err(SimulationError::from_diagnostics(
+            SimulationErrorCode::InvalidBuild,
+            diagnostics,
+        ));
+    }
+    if run_id.is_empty() || run_id.len() > 4096 {
+        return Err(invalid("Run ID must contain 1–4096 bytes."));
+    }
+    let hero = HeroIdentity::from_id(hero_id)
         .ok_or_else(|| invalid("Unsupported hero"))?
         .contract();
-    let scenario = StationaryDummyScenarioV3 {
+    let scenario = StationaryDummyScenarioV4 {
         schema_version: STATIONARY_DUMMY_SCENARIO_SCHEMA_VERSION,
-        target_count: input.options.targets,
+        target_count: options.targets,
         target_distance_units: hero.maximum_combat_range_units,
+        duration_ms: u64::from(options.duration_seconds) * 1000,
     };
-    let action_priority_list = parse_apl(&input.apl_source)?;
+    let action_priority_list = document.apl.clone();
     let mut semantic_apl = serde_json::to_value(&action_priority_list).unwrap();
     fn strip(value: &mut Value) {
         match value {
@@ -256,30 +302,29 @@ pub fn prepare(input: &SimulationInput) -> Result<SimulationRequest, SimulationE
     }
     strip(&mut semantic_apl);
     let profile_fingerprint = digest(
-        &json!({"dataBuildId": input.data_build_id, "modelVersion":hero.model_version,"profile":profile,"evidence":evidence,"scenario":scenario,"apl":semantic_apl}),
+        &json!({"dataBuildId": fellersim_data::build_id(), "modelVersion":hero.model_version,"profile":profile,"evidence":evidence,"scenario":scenario,"apl":semantic_apl}),
     );
-    let seed = input.options.seed.clone().unwrap_or_else(|| {
+    let seed = options.seed.clone().unwrap_or_else(|| {
         digest(&json!({"profileFingerprint":profile_fingerprint}))[..16].to_owned()
     });
     let request = SimulationRequest {
         schema_version: SIMULATOR_SCHEMA_VERSION,
-        run_id: input.run_id.clone(),
-        data_build_id: input.data_build_id.clone(),
+        exploratory,
+        run_id: run_id.into(),
+        data_build_id: fellersim_data::build_id().into(),
         model_version: hero.model_version.into(),
         profile_fingerprint,
-        hero_id: input.character.hero_id.clone(),
+        hero_id: hero_id.into(),
         scenario_id: hero.scenario_id.into(),
         scenario,
         evidence,
-        iterations: input.options.iterations,
+        iterations: options.iterations,
         seed,
         profile,
         action_priority_list,
     };
     validate_request(&request).map_err(|mut error| {
-        if error.code == SimulationErrorCode::InvalidActionPriorityList
-            && let Ok(document) = crate::parse_apl_document(&input.apl_source)
-        {
+        if error.code == SimulationErrorCode::InvalidActionPriorityList {
             for diagnostic in &mut error.diagnostics {
                 if let Some(location) = document
                     .source_map

@@ -201,6 +201,7 @@
     "schemaVersion": 1,
     "scope": "rime-stacked-dummies"
   },
+  "exploratory": false,
   "iterations": 100,
   "meanDps": 300.2070333333333,
   "modelVersion": "rime-stationary-dummies-v35",
@@ -224,12 +225,13 @@
   "profileFingerprint": "test-profile",
   "runId": "fixture-rime",
   "scenario": {
-    "schemaVersion": 3,
+    "durationMs": 300000,
+    "schemaVersion": 4,
     "targetCount": 3,
     "targetDistanceUnits": 3000.0
   },
-  "scenarioId": "rime-stationary-dummies-300s-v3",
-  "schemaVersion": 18,
+  "scenarioId": "rime-stationary-dummies-v4",
+  "schemaVersion": 19,
   "seed": "fedcba9876543210",
   "standardDeviation": 11.910214036916498,
   "targets": [

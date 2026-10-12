@@ -687,7 +687,7 @@ impl Iteration<'_> {
     ) {
         let cast_until = self.common.now_ms.saturating_add(cast_ms);
         self.process_events_through(self.common.now_ms);
-        while self.common.now_ms < ENCOUNTER_DURATION_MS
+        while self.common.now_ms < self.profile.duration_ms
             && (self.common.now_ms < cast_until
                 || self.common.now_ms < self.shared.weapon_charge_lock_until
                 || gcd_remaining_ms > 0.0)
@@ -700,7 +700,7 @@ impl Iteration<'_> {
             } else {
                 1.0
             };
-            let mut next = ENCOUNTER_DURATION_MS;
+            let mut next = self.profile.duration_ms;
             if cast_until > self.common.now_ms {
                 next = next.min(cast_until);
             }
@@ -821,7 +821,7 @@ impl Iteration<'_> {
         self.refresh_elarion_swing_clock();
         self.refresh_gunde_swing_clock();
         while let Some(Reverse(event)) = self.common.queue.peek().cloned() {
-            if event.at_ms > through_ms || event.at_ms > ENCOUNTER_DURATION_MS {
+            if event.at_ms > through_ms || event.at_ms > self.profile.duration_ms {
                 break;
             }
             if !self.common.execution.charge(1) {
@@ -839,7 +839,7 @@ impl Iteration<'_> {
                         // are alive and have no expired-dungeon multiplier.
                         self.shared.spirit =
                             (self.shared.spirit + 1.0).min(self.profile.max_spirit);
-                        if self.common.now_ms + 3_000 <= ENCOUNTER_DURATION_MS {
+                        if self.common.now_ms + 3_000 <= self.profile.duration_ms {
                             self.push_event(
                                 self.common.now_ms + 3_000,
                                 CoreEvent::PassiveSpiritRegen,
@@ -1095,7 +1095,7 @@ impl Iteration<'_> {
         if self.common.execution.failed() {
             return;
         }
-        self.advance_to(through_ms.min(ENCOUNTER_DURATION_MS));
+        self.advance_to(through_ms.min(self.profile.duration_ms));
     }
 
     pub(crate) fn advance_to(&mut self, time_ms: u64) {

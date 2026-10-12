@@ -85,7 +85,7 @@ pub fn trace(
     options: TraceOptions,
     cancelled: &AtomicBool,
 ) -> Result<SimulationTrace, SimulationError> {
-    if options.until_ms > ENCOUNTER_DURATION_MS
+    if options.until_ms > request.scenario.duration_ms
         || !(1..=10000).contains(&options.max_decisions)
         || options.iteration_index >= MAX_SIMULATION_ITERATIONS
     {
@@ -227,6 +227,7 @@ mod tests {
             character: empty_character(hero).unwrap(),
             apl_source: std::fs::read_to_string(apl_path).unwrap(),
             options: SimulationOptions {
+                duration_seconds: 300,
                 iterations: 100,
                 targets: 3,
                 seed: Some("0123456789abcdef".into()),
@@ -412,6 +413,7 @@ mod weapon_trace_tests {
                 character,
                 apl_source,
                 options: SimulationOptions {
+                    duration_seconds: 300,
                     iterations: 100,
                     targets: 1,
                     seed: None,

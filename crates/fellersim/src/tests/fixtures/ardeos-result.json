@@ -153,6 +153,7 @@
     "schemaVersion": 1,
     "scope": "ardeos-stacked-dummies"
   },
+  "exploratory": false,
   "iterations": 100,
   "meanDps": 173.72979999999995,
   "modelVersion": "ardeos-stationary-dummies-v49",
@@ -183,12 +184,13 @@
   "profileFingerprint": "test-profile",
   "runId": "fixture-ardeos",
   "scenario": {
-    "schemaVersion": 3,
+    "durationMs": 300000,
+    "schemaVersion": 4,
     "targetCount": 3,
     "targetDistanceUnits": 3000.0
   },
-  "scenarioId": "ardeos-stationary-dummies-300s-v3",
-  "schemaVersion": 18,
+  "scenarioId": "ardeos-stationary-dummies-v4",
+  "schemaVersion": 19,
   "seed": "0123456789abcdef",
   "standardDeviation": 1.4183598770201942,
   "targets": [

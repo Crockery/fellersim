@@ -36,6 +36,10 @@ Commands work offline. Add `--json` when a program or model needs to read the
 output. The [agent workflow guide](../../agent-guide.md) explains that output
 and how to compare rotations fairly.
 
+To select ratings and effects without equipping items, read the
+[synthetic build guide](../synthetic-builds.md). Synthetic builds use this same
+APL language and combat engine.
+
 ## Which version does this describe?
 
 The [public wiki](https://github.com/Crockery/fellersim/wiki) follows the public

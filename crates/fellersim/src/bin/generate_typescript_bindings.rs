@@ -10,7 +10,7 @@ use fellersim_core::{
     DpsEvidenceClaimStatus, DpsEvidenceScope, DpsEvidenceSnapshotV1, DpsGcdHasteMode,
     DpsTalentModel, DynamicMechanicHandler, DynamicMechanicInstance, MechanicClassification,
     NormalizedDpsProfile, ProcResult, ScenarioNoOpAbility, SimulationError, SimulationErrorCode,
-    SimulationProgress, SimulationRequest, SimulationResult, StationaryDummyScenarioV3,
+    SimulationProgress, SimulationRequest, SimulationResult, StationaryDummyScenarioV4,
     TargetDamageResult, UptimeResult,
 };
 use ts_rs::TS;
@@ -28,6 +28,10 @@ fn push_decl<T: TS>(config: &ts_rs::Config, declarations: &mut Vec<String>) {
 fn main() {
     let config = ts_rs::Config::new().with_large_int("number");
     let mut declarations = Vec::new();
+    push_decl::<SyntheticBuild>(&config, &mut declarations);
+    push_decl::<SecondaryRatings>(&config, &mut declarations);
+    push_decl::<SyntheticEffectSelection>(&config, &mut declarations);
+    push_decl::<SyntheticSetBonus>(&config, &mut declarations);
     push_decl::<CharacterBuild>(&config, &mut declarations);
     push_decl::<CharacterPosition>(&config, &mut declarations);
     push_decl::<CharacterItem>(&config, &mut declarations);
@@ -40,7 +44,7 @@ fn main() {
     push_decl::<SimulationInput>(&config, &mut declarations);
 
     push_decl::<SimulationRequest>(&config, &mut declarations);
-    push_decl::<StationaryDummyScenarioV3>(&config, &mut declarations);
+    push_decl::<StationaryDummyScenarioV4>(&config, &mut declarations);
     push_decl::<DpsEvidenceScope>(&config, &mut declarations);
     push_decl::<DpsEvidenceClaimStatus>(&config, &mut declarations);
     push_decl::<DpsEvidenceClaimSnapshot>(&config, &mut declarations);

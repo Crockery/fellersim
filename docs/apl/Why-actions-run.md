@@ -81,7 +81,8 @@ APL file line and column numbers start at one. Trace times ending in `Ms` are
 milliseconds; APL time queries are seconds.
 
 The default capture is ten seconds and 200 choices. `--seconds` and `--decisions`
-change the capture. The full five-minute encounter still runs. `truncated` means
+change the capture. The full configured encounter still runs (five minutes by
+default). `truncated` means
 the capture stopped early, not that the fight stopped early.
 
 Keep the same character, APL, options, seed, iteration index, and simulator version

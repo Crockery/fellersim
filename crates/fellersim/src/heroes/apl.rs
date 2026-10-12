@@ -394,7 +394,7 @@ impl Iteration<'_> {
             }
             AplBuff::CascadingInferno => {
                 if self.hero.ardeos().cascading_stacks > 0 {
-                    ENCOUNTER_DURATION_MS.saturating_sub(self.common.now_ms)
+                    self.profile.duration_ms.saturating_sub(self.common.now_ms)
                 } else {
                     0
                 }
@@ -421,7 +421,7 @@ impl Iteration<'_> {
                 .saturating_sub(self.common.now_ms),
             AplBuff::GlacialAssault => {
                 u64::from(self.hero.rime().glacial_assault_stacks > 0)
-                    * ENCOUNTER_DURATION_MS.saturating_sub(self.common.now_ms)
+                    * self.profile.duration_ms.saturating_sub(self.common.now_ms)
             }
             AplBuff::IcyFlow => self
                 .hero
@@ -530,7 +530,7 @@ impl Iteration<'_> {
                 .saturating_sub(self.common.now_ms),
             AplBuff::BroodingShadows => {
                 u64::from(self.hero.mara().stealth_active)
-                    * ENCOUNTER_DURATION_MS.saturating_sub(self.common.now_ms)
+                    * self.profile.duration_ms.saturating_sub(self.common.now_ms)
             }
             AplBuff::MaidenOfDeath => self
                 .hero

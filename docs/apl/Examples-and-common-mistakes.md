@@ -79,7 +79,8 @@ select or equip anything.
 actions=/infernal_wave,if=target.health.pct<=50&target.time_to_die<=150
 ```
 
-This waits until halfway through the five-minute fight. At the start, the health
+At the default duration, this waits until halfway through the five-minute fight.
+At the start, the health
 comparison sees 100 and 50; the time comparison is skipped. At 150 seconds,
 health is 50 and time remaining is 150, regardless of damage dealt. This is a
 teaching example: it deliberately spends half the fight without choosing a cast.

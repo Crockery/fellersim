@@ -68,6 +68,116 @@ fn case(id: &str, character: Value) -> Value {
 fn manifest(cases: Vec<Value>) -> Value {
     json!({"version":1,"options":{"iterations":100},"cases":cases})
 }
+
+fn synthetic_document() -> Value {
+    json!({"format":"fellersim-synthetic-build","build":{
+        "schemaVersion":1,"heroId":"gunde","talentPoints":14,"selectedTalentIds":[],
+        "secondaryRatings":{"crit":100,"haste":250,"expertise":75,"spirit":125},
+        "legendary":{"id":"legendary-back-a-haste"},
+        "traits":{"ItemTrait.ID.AbilityToIncreasedMainStat":2},
+        "gemPower":{"Ruby":1000},"setBonuses":{"setb-percentage-hdt":{"pieceCount":2}}
+    }})
+}
+
+#[test]
+fn synthetic_inputs_support_discovery_preparation_execution_and_duration() {
+    let document = synthetic_document();
+    conforms("synthetic", &document);
+    let req = json!({"version":1,"character":{"kind":"synthetic","document":document},"apl":{"kind":"default"},"options":{"iterations":100,"durationSeconds":660,"seed":"0123456789abcdef"}});
+    conforms("request", &req);
+    for (command, schema_name) in [
+        ("validate", "validate-response"),
+        ("prepare", "prepare-response"),
+        ("run", "run-response"),
+    ] {
+        let result = success(&[command, "--input", "-"], Some(&req));
+        conforms(schema_name, &result);
+        assert_eq!(result["data"]["exploratory"], true);
+        if command != "validate" {
+            assert_eq!(result["data"]["scenario"]["durationMs"], 660000);
+        }
+    }
+    let traced = success(
+        &[
+            "trace",
+            "--input",
+            "-",
+            "--seconds",
+            "660",
+            "--decisions",
+            "10",
+        ],
+        Some(&req),
+    );
+    conforms("trace-response", &traced);
+    assert_eq!(traced["data"]["result"]["exploratory"], true);
+    for kind in ["legendaries", "weapons", "gem-tracks"] {
+        let catalog = success(&["catalog", kind, "--hero", "gunde"], None);
+        conforms("catalog-response", &catalog);
+    }
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("synthetic.json");
+    std::fs::write(&path, document.to_string()).unwrap();
+    let result = success(
+        &[
+            "prepare",
+            "--synthetic",
+            path.to_str().unwrap(),
+            "--default-apl",
+            "--duration-seconds",
+            "660",
+        ],
+        None,
+    );
+    assert_eq!(result["data"]["scenario"]["durationMs"], 660000);
+    let file_request = json!({"version":1,"character":{"kind":"synthetic-file","path":path},"apl":{"kind":"default"}});
+    assert_eq!(
+        success(&["validate", "--input", "-"], Some(&file_request))["data"]["exploratory"],
+        true
+    );
+}
+
+#[test]
+fn synthetic_batch_continues_after_invalid_build_and_comparison_checks_duration() {
+    let doc = synthetic_document();
+    let mut bad = doc.clone();
+    bad["build"]["traits"] = json!({"unknown":1});
+    let make_case = |id: &str, document: Value| json!({"id":id,"character":{"kind":"synthetic","document":document},"apl":{"kind":"default"}});
+    let mut batch = manifest(vec![
+        make_case("base", doc.clone()),
+        make_case("bad", bad),
+        make_case("repeat", doc.clone()),
+    ]);
+    batch["options"]["durationSeconds"] = json!(1);
+    batch["options"]["seed"] = json!("0123456789abcdef");
+    let output = invoke(&["batch", "--input", "-"], Some(&batch));
+    assert!(!output.status.success());
+    let result = parse_response(&output);
+    conforms("batch-response", &result);
+    assert_eq!(result["data"]["cases"][0]["status"], "completed");
+    assert_eq!(result["data"]["cases"][1]["status"], "invalid");
+    assert_eq!(result["data"]["cases"][2]["status"], "completed");
+    assert!(result["data"]["cases"][0]["result"]["meanDps"].is_number());
+    assert_eq!(
+        result["data"]["cases"][0]["result"]["meanDps"],
+        result["data"]["cases"][2]["result"]["meanDps"]
+    );
+    let mut comparison = manifest(vec![
+        make_case("base", doc.clone()),
+        make_case("variant", doc),
+    ]);
+    comparison["cases"][1]["options"] = json!({"durationSeconds":660});
+    let output = invoke(
+        &["compare", "--input", "-", "--baseline", "base"],
+        Some(&comparison),
+    );
+    assert!(!output.status.success());
+    assert!(
+        String::from_utf8(output.stdout)
+            .unwrap()
+            .contains("incompatible-comparison")
+    );
+}
 #[test]
 fn every_command_has_machine_output_and_response_schema() {
     let req = request(starter("firemage"));

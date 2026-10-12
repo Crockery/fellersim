@@ -458,7 +458,7 @@ impl Iteration<'_> {
             .selected_talents
             .contains_key("gunde-talent-id-talent5")
         {
-            self.hero.gunde_mut().crimson_strikes_until = ENCOUNTER_DURATION_MS;
+            self.hero.gunde_mut().crimson_strikes_until = self.profile.duration_ms;
             self.activate_fixed_buff(
                 AplBuff::CrimsonStrikes,
                 self.hero.gunde().crimson_strikes_until,

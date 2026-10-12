@@ -16,6 +16,13 @@ The examples start with unequipped characters; edit their JSON to describe
 your equipment and talents. Incomplete equipment is allowed and contributes
 only the selected stats and effects. Unknown or invalid selections are errors.
 
+## Synthetic builds
+
+Select ratings and effects without equipment using `--synthetic FILE`. See the
+[synthetic build guide](docs/synthetic-builds.md) for Rust evaluation, JSON inputs,
+stat units, equipment conversion, 660-second runs, and batching. Synthetic results
+are exploratory; equipment feasibility is not evaluated.
+
 ## Default APLs
 
 The [default-apls](default-apls/) directory contains the action priorities used by
@@ -64,14 +71,14 @@ language reference, and examples. The guide is included with downloads and is
 also available on the [public wiki](https://github.com/Crockery/fellersim/wiki).
 APL files use the same language as Fellership's editor.
 
-`--config simulation.json` accepts `iterations`, `targets`, and `seed`.
+`--config simulation.json` accepts `iterations`, `targets`, `seed`, and `durationSeconds`.
 Explicit flags override the file. Defaults are 10,000 iterations, one target,
 and a seed derived from the semantic inputs. Iterations must be 100–100,000;
 targets must be 1–20. An explicit seed is sixteen lowercase hexadecimal digits.
 Comments, editor IDs, and run IDs do not change the derived seed.
 
-Every encounter lasts five minutes against stationary, co-located immortal
-dummies. Each target uses 6,637,912 maximum health and Spirit value 45 for
+Encounters default to five minutes against stationary, co-located immortal
+dummies. Set `--duration-seconds` to 1–1,200 whole seconds for either build type. Each target uses 6,637,912 maximum health and Spirit value 45 for
 damage-derived Spirit, based on Eternal 23 Warlord Brogg. These fixed benchmark
 values do not scale with the character, and no party damage is simulated.
 The current six supported heroes are Ardeos, Rime, Tariq, Elarion, Mara,

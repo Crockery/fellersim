@@ -108,21 +108,27 @@ fn target_id(value: &str) -> String {
     result.trim_matches('-').into()
 }
 
-pub(super) fn prepare(
-    build: &CharacterBuild,
-    targets: u32,
-) -> Result<(NormalizedDpsProfile, DpsEvidenceSnapshotV1), SimulationError> {
+#[derive(Default)]
+pub(super) struct Contributions {
+    pub gear: BTreeMap<String, f64>,
+    pub sources: BTreeSet<String>,
+    pub mechanic_ids: BTreeSet<String>,
+    pub sets: BTreeMap<String, (u32, String)>,
+    pub gems: BTreeMap<String, f64>,
+    pub trait_ranks: BTreeMap<String, u32>,
+    pub blessing_ranks: BTreeMap<String, u32>,
+    pub item_effects: Vec<(String, String)>,
+}
+
+pub(super) fn collect(build: &CharacterBuild) -> Contributions {
     let data = fellersim_data::catalog();
     let hero = &data["heroes"][&build.hero_id];
     let model = &data["itemStatModel"];
     let settings = &model["calculationSettings"];
     let current = &settings["currentItem"];
-    let starting = &hero["startingStats"];
     let primary = string(hero, "primaryStat");
-    let mut p = hero["base"].clone();
     let mut gear = BTreeMap::<String, f64>::new();
-    let mut mechanics = Vec::new();
-    let mut modifiers = Vec::new();
+    let mut item_effects = Vec::new();
     let mut sources = BTreeSet::new();
     let mut mechanic_ids = BTreeSet::new();
     let mut sets = BTreeMap::<String, (u32, String)>::new();
@@ -227,13 +233,72 @@ pub(super) fn prepare(
                 .entry(blessing.blessing_id.clone())
                 .or_default() += blessing.rank;
         }
+        if !arr(&definition["sources"]).is_empty() || !definition["weapon"].is_null() {
+            item_effects.push((item.item_id.clone(), pos.position_id.clone()));
+        }
+        for id in arr(&definition["setBonusIds"]) {
+            let entry = sets
+                .entry(id.as_str().unwrap().into())
+                .or_insert((0, pos.position_id.clone()));
+            entry.0 += 1;
+        }
+    }
+    Contributions {
+        gear,
+        sources,
+        mechanic_ids,
+        sets,
+        gems,
+        trait_ranks,
+        blessing_ranks,
+        item_effects,
+    }
+}
+
+pub(super) fn prepare(
+    build: &CharacterBuild,
+    targets: u32,
+) -> Result<(NormalizedDpsProfile, DpsEvidenceSnapshotV1), SimulationError> {
+    resolve(
+        &build.hero_id,
+        &build.selected_talent_ids,
+        collect(build),
+        targets,
+    )
+}
+
+pub(super) fn resolve(
+    hero_id: &str,
+    selected_talent_ids: &[String],
+    contributions: Contributions,
+    targets: u32,
+) -> Result<(NormalizedDpsProfile, DpsEvidenceSnapshotV1), SimulationError> {
+    let data = fellersim_data::catalog();
+    let hero = &data["heroes"][hero_id];
+    let starting = &hero["startingStats"];
+    let primary = string(hero, "primaryStat");
+    let mut p = hero["base"].clone();
+    let Contributions {
+        gear,
+        mut sources,
+        mut mechanic_ids,
+        sets,
+        mut gems,
+        trait_ranks,
+        blessing_ranks,
+        item_effects,
+    } = contributions;
+    let mut mechanics = Vec::new();
+    let mut modifiers = Vec::new();
+    for (item_id, position_id) in item_effects {
+        let definition = &hero["items"][&item_id];
         for entry in arr(&definition["sources"]) {
             if string(&entry["source"], "category") == "set-bonuses" {
                 continue;
             }
             let instance = string(&entry["model"], "instanceId").replace(
                 &format!(":{}:", string(&entry["source"], "positionId")),
-                &format!(":{}:", pos.position_id),
+                &format!(":{}:", position_id),
             );
             add_source(
                 &entry["model"],
@@ -243,12 +308,6 @@ pub(super) fn prepare(
                 &mut sources,
                 &mut mechanic_ids,
             );
-        }
-        for id in arr(&definition["setBonusIds"]) {
-            let entry = sets
-                .entry(id.as_str().unwrap().into())
-                .or_insert((0, pos.position_id.clone()));
-            entry.0 += 1;
         }
         if !definition["weapon"].is_null() {
             p["abilities"]
@@ -410,7 +469,7 @@ pub(super) fn prepare(
         }
     }
     mechanics.sort_by(|a, b| string(a, "instanceId").cmp(string(b, "instanceId")));
-    for id in &build.selected_talent_ids {
+    for id in selected_talent_ids {
         let t = &hero["talents"][id];
         p["talents"]
             .as_array_mut()
@@ -617,7 +676,7 @@ pub(super) fn prepare(
         sources.insert("GA_Bowguy_Passive_InstantMarkTarget_Monitor".into());
     }
     let scope = serde_json::to_value(
-        HeroIdentity::from_id(&build.hero_id)
+        HeroIdentity::from_id(hero_id)
             .unwrap()
             .contract()
             .evidence_scope(targets == 1),

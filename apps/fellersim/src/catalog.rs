@@ -5,6 +5,9 @@ use std::collections::BTreeMap;
 
 pub const KINDS: &[&str] = &[
     "heroes",
+    "legendaries",
+    "weapons",
+    "gem-tracks",
     "abilities",
     "talents",
     "equipment",
@@ -77,7 +80,18 @@ pub fn search(args: Catalog) -> Result<Value, Failure> {
     }
     let heroes = data["heroes"].as_object().unwrap();
     let mut entries: BTreeMap<String, Value> = BTreeMap::new();
-    if ["traits", "blessings", "sets"].contains(&args.kind.as_str()) {
+    if args.kind == "gem-tracks" {
+        for gem in data["gems"].as_array().unwrap() {
+            let family = gem["family"].as_str().unwrap();
+            let entry = entries
+                .entry(family.into())
+                .or_insert_with(|| json!({"id":family,"name":family,"thresholds":[]}));
+            entry["thresholds"]
+                .as_array_mut()
+                .unwrap()
+                .push(gem.clone());
+        }
+    } else if ["traits", "blessings", "sets"].contains(&args.kind.as_str()) {
         for (id, value) in data[&args.kind].as_object().unwrap() {
             entries.insert(id.clone(), json!({"id":id,"name":value["source"]["sourceName"],"description":value["source"]["sourceDescription"],"maxRank":value["maxRank"],"models":value["models"],"requiredSetCount":value["requiredSetCount"]}));
         }
@@ -157,6 +171,7 @@ pub fn search(args: Catalog) -> Result<Value, Failure> {
                     json!({"id":kind,"name":a.name,"gameAbilityId":a.id,"token":token(&kind),"manuallyCastable":a.manually_castable,"availability":if build.is_some() {"build"} else {"hero"},"model":a})
                 }).collect(),
                 "talents" => hero["talents"].as_object().unwrap().iter().map(|(id,t)| json!({"id":id,"name":t["model"]["name"],"description":t["description"],"pointCost":t["pointCost"],"model":t["model"],"token":format!("talent.{id}.enabled"),"selected":character.selected_talent_ids.contains(id)})).collect(),
+                "legendaries" | "weapons" => hero["items"].as_object().unwrap().iter().filter(|(id,item)| if args.kind == "legendaries" { id.starts_with("legendary-") } else { !item["weapon"].is_null() }).map(|(id,item)| json!({"id":id,"name":item["name"],"description":item["description"],"effects":item["sources"],"ability":item["weapon"]})).collect(),
                 "equipment" => hero["items"].as_object().unwrap().iter().filter_map(|(id,item)| {
                     if let Some(position) = &args.position {
                         let slot = data["positions"].as_array().unwrap().iter().find(|p| p["id"] == *position);

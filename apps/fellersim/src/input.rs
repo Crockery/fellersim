@@ -45,10 +45,61 @@ impl CharacterFile {
     }
 }
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub enum SyntheticFormat {
+    #[serde(rename = "fellersim-synthetic-build")]
+    Synthetic,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SyntheticFile {
+    pub format: SyntheticFormat,
+    pub build: SyntheticBuild,
+}
+
+pub enum LoadedBuild {
+    Equipment(CharacterBuild),
+    Synthetic(Box<SyntheticBuild>),
+}
+impl LoadedBuild {
+    pub fn hero_id(&self) -> &str {
+        match self {
+            Self::Equipment(b) => &b.hero_id,
+            Self::Synthetic(b) => &b.hero_id,
+        }
+    }
+    pub fn exploratory(&self) -> bool {
+        matches!(self, Self::Synthetic(_))
+    }
+    pub fn diagnose(&self) -> Vec<Diagnostic> {
+        match self {
+            Self::Equipment(b) => diagnose_character(b),
+            Self::Synthetic(b) => diagnose_synthetic(b),
+        }
+    }
+    pub fn resolve(
+        &self,
+        targets: u32,
+    ) -> Result<
+        (
+            fellersim_core::NormalizedDpsProfile,
+            fellersim_core::DpsEvidenceSnapshotV1,
+        ),
+        fellersim_core::SimulationError,
+    > {
+        match self {
+            Self::Equipment(b) => prepare_character(b, targets),
+            Self::Synthetic(b) => prepare_synthetic_build(b, targets),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum CharacterSource {
     File { path: PathBuf },
     Inline { document: CharacterFile },
+    Synthetic { document: Box<SyntheticFile> },
+    SyntheticFile { path: PathBuf },
 }
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
@@ -76,6 +127,8 @@ pub struct Request {
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct OptionOverrides {
+    #[schemars(range(min = 1, max = 1200))]
+    pub duration_seconds: Option<u32>,
     #[schemars(range(min = 100, max = 100000))]
     pub iterations: Option<u32>,
     #[schemars(range(min = 1, max = 20))]
@@ -85,6 +138,9 @@ pub struct OptionOverrides {
 }
 impl OptionOverrides {
     pub fn apply(&self, options: &mut SimulationOptions) {
+        if let Some(v) = self.duration_seconds {
+            options.duration_seconds = v;
+        }
         if let Some(v) = self.iterations {
             options.iterations = v;
         }
@@ -118,7 +174,7 @@ pub struct Manifest {
     pub cases: Vec<serde_json::Value>,
 }
 pub struct Loaded {
-    pub character: CharacterBuild,
+    pub character: LoadedBuild,
     pub apl: Option<String>,
     pub options: SimulationOptions,
     pub character_source: String,
@@ -130,23 +186,6 @@ pub struct Loaded {
     pub argument_options: Vec<&'static str>,
 }
 impl Loaded {
-    pub fn simulation_input(&self) -> Result<SimulationInput, Failure> {
-        let apl_source = self.apl.clone().ok_or_else(|| {
-            Failure::input(
-                "missing-apl",
-                "Supply --apl FILE or --default-apl, or an APL source in the request.",
-                "/apl",
-            )
-        })?;
-        Ok(SimulationInput {
-            schema_version: INPUT_SCHEMA_VERSION,
-            run_id: "cli".into(),
-            data_build_id: fellersim_data::build_id().into(),
-            character: self.character.clone(),
-            apl_source,
-            options: self.options.clone(),
-        })
-    }
     pub fn locate(&self, error: fellersim_core::SimulationError) -> Failure {
         let mut failure = Failure::from(error);
         for d in &mut failure.diagnostics {
@@ -184,7 +223,25 @@ impl Loaded {
         failure
     }
     pub fn prepare(&self) -> Result<fellersim_core::SimulationRequest, Failure> {
-        prepare(&self.simulation_input()?).map_err(|e| self.locate(e))
+        let apl = self.apl.as_deref().ok_or_else(|| {
+            Failure::input(
+                "missing-apl",
+                "Supply --apl FILE or --default-apl, or an APL source in the request.",
+                "/apl",
+            )
+        })?;
+        let result = match &self.character {
+            LoadedBuild::Equipment(character) => prepare(&SimulationInput {
+                schema_version: INPUT_SCHEMA_VERSION,
+                run_id: "cli".into(),
+                data_build_id: fellersim_data::build_id().into(),
+                character: character.clone(),
+                apl_source: apl.into(),
+                options: self.options.clone(),
+            }),
+            LoadedBuild::Synthetic(build) => prepare_synthetic(build, apl, &self.options, "cli"),
+        };
+        result.map_err(|e| self.locate(e))
     }
 }
 pub fn read(path: &Path, limit: usize) -> Result<String, Failure> {
@@ -263,7 +320,10 @@ pub fn resolve(
     let (character, character_origin) = match character_source {
         CharacterSource::File { path } => {
             let path = directory.join(path);
-            (character(&path)?, path.display().to_string())
+            (
+                LoadedBuild::Equipment(character(&path)?),
+                path.display().to_string(),
+            )
         }
         CharacterSource::Inline { document } => {
             if serde_json::to_vec(document).unwrap().len() > FILE_LIMIT {
@@ -275,13 +335,35 @@ pub fn resolve(
                 .source(source));
             }
             (
-                document.clone().validate().map_err(|mut e| {
+                LoadedBuild::Equipment(document.clone().validate().map_err(|mut e| {
                     for d in &mut e.diagnostics {
                         d.path = d.path.take().map(|p| format!("/character/document{p}"));
                     }
                     e.source(source)
-                })?,
+                })?),
                 source.display().to_string(),
+            )
+        }
+        CharacterSource::Synthetic { document } => {
+            if serde_json::to_vec(document).unwrap().len() > FILE_LIMIT {
+                return Err(Failure::input(
+                    "file-too-large",
+                    "Inline synthetic build exceeds 1 MiB.",
+                    "/character",
+                )
+                .source(source));
+            }
+            (
+                LoadedBuild::Synthetic(Box::new(document.build.clone())),
+                source.display().to_string(),
+            )
+        }
+        CharacterSource::SyntheticFile { path } => {
+            let path = directory.join(path);
+            let document: SyntheticFile = decode(&read(&path, FILE_LIMIT)?, &path)?;
+            (
+                LoadedBuild::Synthetic(Box::new(document.build)),
+                path.display().to_string(),
             )
         }
     };
@@ -301,7 +383,7 @@ pub fn resolve(
         }
         Some(AplSource::Default) => (
             Some(
-                default_apl(&character.hero_id)
+                default_apl(character.hero_id())
                     .ok_or_else(|| {
                         Failure::input(
                             "unsupported-hero",
@@ -311,7 +393,7 @@ pub fn resolve(
                     })?
                     .into(),
             ),
-            format!("embedded:{}", character.hero_id),
+            format!("embedded:{}", character.hero_id()),
         ),
         None => (None, source.display().to_string()),
     };
@@ -322,8 +404,10 @@ pub fn resolve(
         character_source: character_origin,
         apl_source: apl_origin,
         character_prefix: match character_source {
-            CharacterSource::File { .. } => "/build",
-            CharacterSource::Inline { .. } => "/character/document/build",
+            CharacterSource::File { .. } | CharacterSource::SyntheticFile { .. } => "/build",
+            CharacterSource::Inline { .. } | CharacterSource::Synthetic { .. } => {
+                "/character/document/build"
+            }
         }
         .into(),
         apl_pointer: matches!(apl_source, Some(AplSource::Inline { .. }))
@@ -352,18 +436,23 @@ pub fn load(input: &Input) -> Result<Loaded, Failure> {
             path,
         );
     }
-    let path = input.character.as_ref().ok_or_else(|| {
-        Failure::input(
-            "missing-character",
-            "Supply --character FILE or --input FILE|-.",
-            "/character",
-        )
-    })?;
+    let path = input
+        .character
+        .as_ref()
+        .or(input.synthetic.as_ref())
+        .ok_or_else(|| {
+            Failure::input(
+                "missing-character",
+                "Supply --character FILE, --synthetic FILE, or --input FILE|-.",
+                "/character",
+            )
+        })?;
     let mut options = match &input.config {
         Some(path) => decode(&read(path, FILE_LIMIT)?, path)?,
         None => SimulationOptions::default(),
     };
     OptionOverrides {
+        duration_seconds: input.duration_seconds,
         iterations: input.iterations,
         targets: input.targets,
         seed: input.seed.clone(),
@@ -375,7 +464,11 @@ pub fn load(input: &Input) -> Result<Loaded, Failure> {
         input.apl.clone().map(|path| AplSource::File { path })
     };
     let mut loaded = resolve(
-        &CharacterSource::File { path: path.clone() },
+        &if input.synthetic.is_some() {
+            CharacterSource::SyntheticFile { path: path.clone() }
+        } else {
+            CharacterSource::File { path: path.clone() }
+        },
         apl.as_ref(),
         options,
         Path::new("."),
@@ -387,6 +480,9 @@ pub fn load(input: &Input) -> Result<Loaded, Failure> {
         .map(|p| p.display().to_string())
         .unwrap_or_else(|| "arguments".into());
     loaded.options_prefix.clear();
+    if input.duration_seconds.is_some() {
+        loaded.argument_options.push("durationSeconds");
+    }
     if input.iterations.is_some() {
         loaded.argument_options.push("iterations");
     }

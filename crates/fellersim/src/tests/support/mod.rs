@@ -1379,6 +1379,7 @@ fn request(
         DpsEvidenceScope::ArdeosStackedDummies
     };
     SimulationRequest {
+        exploratory: false,
         schema_version: SIMULATOR_SCHEMA_VERSION,
         run_id: "test-run".into(),
         data_build_id: "test-build".into(),
@@ -1386,7 +1387,8 @@ fn request(
         profile_fingerprint: "test-profile".into(),
         hero_id: ARDEOS_HERO_ID.into(),
         scenario_id: ARDEOS_SCENARIO_ID.into(),
-        scenario: StationaryDummyScenarioV3 {
+        scenario: StationaryDummyScenarioV4 {
+            duration_ms: ENCOUNTER_DURATION_MS,
             schema_version: STATIONARY_DUMMY_SCENARIO_SCHEMA_VERSION,
             target_count,
             target_distance_units: ARDEOS_MAX_COMBAT_RANGE_UNITS,
