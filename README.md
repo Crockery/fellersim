@@ -1,3 +1,5 @@
+> **Retired:** This project is no longer maintained. Fellership hosting, the simulator service, and hosted data assets have been discontinued. Existing source and releases remain available for reference.
+
 # Fellersim
 
 Fellersim is an offline Fellowship character simulator. Download the Windows
